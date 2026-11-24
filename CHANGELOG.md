@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/theseven1/Rayward-Vencord-User-Plugin/compare/v1.0.0...v1.1.0) (2026-11-24)
+
+
+### Features
+
+* add Rayward plugin ([1060c35](https://github.com/theseven1/Rayward-Vencord-User-Plugin/commit/1060c356f1cf701d8df1dbb8fafc4f9d6aa7d730))
+
 ## 1.0.0 (2026-11-24)
 
 First public release.
