@@ -71,7 +71,20 @@ Please report security problems privately, as described in [SECURITY.md](SECURIT
       <br><sub>Author and maintainer</sub>
       <br><sub>Discord: <code>_de.bug</code></sub>
     </td>
+    <td align="center" width="180">
+      <a href="https://github.com/raywardapp"><img src="https://avatars.githubusercontent.com/u/185185904" width="96" height="96" alt="Jaxron"></a>
+      <br><b>Rayward</b>
+      <br><sub>Logo and API</sub>
+      <br><sub>https://rayward.app</sub>
+    </td>
+     <td align="center" width="180">
+      <a href="https://github.com/Vendicated/Vencord"><img src="https://vencord.dev/assets/logo-nav.avif" width="96" height="96" alt="Jaxron"></a>
+      <br><b>Vencord</b>
+      <br><sub>Vencord</sub>
+      <br><sub>https://vencord.dev/</sub>
+    </td>
   </tr>
+    
 </table>
 
 Results come from [Rayward](https://rayward.app) and the sources it connects: [Rotector](https://rotector.com), [TASE](https://tasebot.org), [RAB](https://simmer.icu/rab), [Okappiki](https://okappiki.com), ServerSweep, [RCR](https://rcr.gg) and [RoLock](https://rolock.dev). Each source runs its own detection and handles its own appeals.
