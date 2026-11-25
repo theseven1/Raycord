@@ -1,8 +1,7 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/rayward/wordmark-dark.webp">
-  <img src="assets/rayward/wordmark-light.webp" alt="Rayward" height="56">
+  <img src="assets/rayward/raycord.png" alt="Rayward" height="156">
 </picture>
 
 <p>A Vencord plugin that shows safety flags from Rayward's sources on Discord profiles, in chat and in the member list.</p>
