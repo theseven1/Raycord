@@ -102,14 +102,16 @@ export function VerdictChip({ verdict, incomplete }: { verdict: Verdict; incompl
     const flagged = verdict.severity > Severity.Clean;
     const tone = flagged ? "unsafe" : verdict.tone;
     const label = flagged
-        ? `${severityName(verdict.severity)} · ${plural(verdictSources(verdict).length, "source")}`
+        ? severityName(verdict.severity)
         : incomplete && tone === "safe" ? "Incomplete" : tone === "safe" ? "No flags" : TONE_LABEL[tone];
+    const detail = flagged ? `· ${plural(verdictSources(verdict).length, "source")}` : "";
 
     return (
         <TooltipContainer text={<SourcesTooltip verdict={verdict} />}>
-            <span key={label} className={cl("chip", `chip-${tone}`, flagged && `chip-severity-${verdict.severity}`, "pop")}>
+            <span key={label + detail} className={cl("chip", `chip-${tone}`, flagged && `chip-severity-${verdict.severity}`, "pop")}>
                 <StatusIcon tone={tone} size={14} />
                 {label}
+                {detail && <span className={cl("chip-detail")}>{detail}</span>}
             </span>
         </TooltipContainer>
     );
@@ -119,7 +121,7 @@ export function Skeleton({ width }: { width: string; }) {
     return <div className={cl("skeleton")} style={{ width }} />;
 }
 
-export function LoadingBlock({ label = "Checking sources.." }: { label?: string; }) {
+export function LoadingBlock({ label = "Checking sources" }: { label?: string; }) {
     return (
         <div className={cl("loading")} aria-busy role="status" aria-label={label}>
             <Skeleton width="55%" />
@@ -135,9 +137,9 @@ const openSettings = () => {
 };
 
 const BLOCKING_COPY: Partial<Record<RaywardError["kind"], { title: string; body: string; }>> = {
-    config: { title: "Add your Rayward API key", body: "Lookups need a key from your approved Rayward account." },
-    auth: { title: "Your Rayward API key was rejected", body: "Check that the key is valid and your access is approved." },
-    quota: { title: "Daily lookup quota reached", body: "Rayward resets the quota daily." },
+    config: { title: "Add your Rayward API key", body: "You need one to check accounts." },
+    auth: { title: "Your Rayward API key was rejected", body: "Make sure it's valid and active." },
+    quota: { title: "Daily quota reached", body: "You've reached today's lookup quota." },
 };
 
 export function BlockingState({ error, onRetry }: { error: RaywardError; onRetry(): void; }) {
@@ -194,7 +196,7 @@ export function IncompleteBanner({ failed, onRetry }: { failed: FailedSource[]; 
         <div className={cl("incomplete", "enter")} role="status">
             <RaywardMark size={16} />
             <span className={cl("incomplete-text")}>
-                {failed.length === 1 ? `${failed[0].source} didn't answer` : `${listAnd(failed.map(f => f.source))} didn't answer`}. Other sources are shown.
+                {failed.length === 1 ? `${failed[0].source} didn't answer` : `${listAnd(failed.map(f => f.source))} didn't answer`}.
             </span>
             {failed.length === 1
                 ? <RetryButton source={failed[0].source} onRetry={() => onRetry(failed[0].providerId)} />

@@ -21,7 +21,7 @@ function SourcesPanel({ report }: { report: RaywardReport; }) {
     const rest = outcomes.filter(o => !flagged.includes(o));
     const flags = easiFlags(report.notes, new Map([...report.connections, ...report.alts].map(c => [c.robloxUserId, c.robloxUsername])));
 
-    if (!outcomes.length) return <div className={cl("empty", "enter")}>No sources are available..</div>;
+    if (!outcomes.length) return <div className={cl("empty", "enter")}>No sources available.</div>;
 
     return (
         <div className={cl("list")}>

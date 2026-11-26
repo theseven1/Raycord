@@ -4,15 +4,26 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { ChannelStore, FluxDispatcher, IconUtils, MessageActions, NavigationRouter, RestAPI, SelectedChannelStore, UserStore } from "@webpack/common";
+import { findByCodeLazy } from "@webpack";
+import { ChannelStore, FluxDispatcher, IconUtils, MessageActions, NavigationRouter, RestAPI, SelectedChannelStore, StickersStore, UserStore } from "@webpack/common";
 
-import { guardFirstContact } from "../data/guard";
+import { resetWarnings } from "../components/chat/ChatWarning";
+import { guardFirstContact, resetChannelApproval } from "../data/guard";
 import { accountForChannel, emptyState, findAccount, isLabActive, isMockChannel, isMockDiscord, labState, type MockAccount, type MockMessage, mockSnowflake, newAccount, setLab, subscribeLab, unloadLab, updateLab } from "../data/mock";
 import { applyPreset, type PresetId } from "../data/mockPresets";
 import { getProviders, peekProviders } from "../data/providers";
 import { logger } from "./utils";
 
 type AnyFn = (...args: any[]) => any;
+
+const createChannelRecord: (raw: object) => unknown = findByCodeLazy(".GUILD_TEXT]", "fromServer)");
+
+const WAVE_STICKER_ID = "749054660769218631";
+
+function stickerItem(id: string) {
+    const sticker = StickersStore.getStickerById(id) as { name?: string; format_type?: number; } | undefined;
+    return { id, name: sticker?.name ?? "Wave", format_type: sticker?.format_type ?? 3 };
+}
 
 export function avatarUrlOf(account: MockAccount): string {
     const index = /^[0-5]$/.test(account.avatar) ? account.avatar : null;
@@ -61,6 +72,7 @@ function rawMessage(account: MockAccount, channelId: string, message: MockMessag
         channel_id: channelId,
         author: message.authorId === account.id ? rawUser(account) : rawSelf(),
         content: message.content,
+        sticker_items: message.stickerIds?.map(stickerItem) ?? [],
         timestamp: new Date(message.timestamp).toISOString(),
         edited_timestamp: null,
         type: 0,
@@ -107,7 +119,7 @@ export function syncAccount(accountId: string) {
     FluxDispatcher.dispatch({ type: "USER_PROFILE_FETCH_SUCCESS", userProfile: profileBody(account) });
 
     const channelId = channelOf(account.id);
-    if (channelId && !ChannelStore.getChannel(channelId)) FluxDispatcher.dispatch({ type: "CHANNEL_CREATE", channel: rawChannel(account, channelId) });
+    if (channelId && !ChannelStore.getChannel(channelId)) FluxDispatcher.dispatch({ type: "CHANNEL_CREATE", channel: createChannelRecord(rawChannel(account, channelId)) });
     applyAvatar(account);
 }
 
@@ -152,7 +164,8 @@ function unwrapAll() {
 const MOCK_ID = /\d{15,21}/g;
 const touchesMock = (url: string) => [...url.matchAll(MOCK_ID)].some(([id]) => isMockDiscord(id) || isMockChannel(id));
 
-function localResponse(url: string) {
+function localResponse(method: string, url: string) {
+    if (method !== "get") return null;
     const profile = /\/users\/(\d+)\/profile/.exec(url);
     const account = profile && findAccount(profile[1]);
     if (account) return { ok: true, status: 200, body: profileBody(account), headers: {} };
@@ -163,13 +176,13 @@ function localResponse(url: string) {
         const messages = (labState()?.messages[channel[1]] ?? []).map(m => rawMessage(owner, channel[1], m)).reverse();
         return { ok: true, status: 200, body: messages, headers: {} };
     }
-    return { ok: true, status: 204, body: null, headers: {} };
+    return null;
 }
 
-function addLocalMessage(channelId: string, authorId: string, content: string) {
+function addLocalMessage(channelId: string, authorId: string, content: string, stickerIds?: string[]) {
     const account = accountForChannel(channelId);
     if (!account) return;
-    const message: MockMessage = { id: mockSnowflake(), authorId, content, timestamp: Date.now() };
+    const message: MockMessage = { id: mockSnowflake(), authorId, content, timestamp: Date.now(), ...stickerIds?.length ? { stickerIds } : {} };
     void updateLab(draft => {
         (draft.messages[channelId] ??= []).push(message);
         draft.messages[channelId] = draft.messages[channelId].slice(-200);
@@ -181,7 +194,10 @@ function installWrappers() {
     for (const method of ["get", "post", "put", "patch", "del"]) {
         wrap(RestAPI as unknown as Record<string, unknown>, method, original => function (this: unknown, request: string | { url?: string; }, ...rest: unknown[]) {
             const url = typeof request === "string" ? request : request?.url ?? "";
-            if (isLabActive() && touchesMock(url)) return Promise.resolve(localResponse(url));
+            if (isLabActive() && touchesMock(url)) {
+                const response = localResponse(method, url);
+                return response ? Promise.resolve(response) : Promise.reject({ ok: false, status: 404, body: { message: "Unknown User", code: 10013 }, headers: {} });
+            }
             return original.call(this, request, ...rest);
         });
     }
@@ -200,13 +216,18 @@ function installWrappers() {
         return Promise.resolve({ ok: true, status: 200, body: null });
     });
 
-    for (const [name, text] of [["sendStickers", "*sent a sticker*"], ["sendGreetMessage", "*waved* 👋"]] as const) {
-        wrap(MessageActions, name, original => async function (this: unknown, channelId: string, ...rest: unknown[]) {
-            if (!isMockChannel(channelId)) return original.call(this, channelId, ...rest);
-            if (!await guardFirstContact(channelId)) return;
-            addLocalMessage(channelId, UserStore.getCurrentUser().id, text);
-        });
-    }
+    wrap(MessageActions, "sendStickers", original => async function (this: unknown, channelId: string, stickerIds: unknown, ...rest: unknown[]) {
+        if (!isMockChannel(channelId)) return original.call(this, channelId, stickerIds, ...rest);
+        if (!await guardFirstContact(channelId)) return;
+        const ids = Array.isArray(stickerIds) ? stickerIds.map(String) : [String(stickerIds)];
+        addLocalMessage(channelId, UserStore.getCurrentUser().id, "", ids);
+    });
+
+    wrap(MessageActions, "sendGreetMessage", original => async function (this: unknown, channelId: string, ...rest: unknown[]) {
+        if (!isMockChannel(channelId)) return original.call(this, channelId, ...rest);
+        if (!await guardFirstContact(channelId)) return;
+        addLocalMessage(channelId, UserStore.getCurrentUser().id, "", [WAVE_STICKER_ID]);
+    });
 
     wrap(IconUtils as unknown as Record<string, unknown>, "getUserAvatarURL", original => function (this: unknown, user: { id?: string; }, ...rest: unknown[]) {
         const account = user?.id ? findAccount(user.id) : undefined;
@@ -242,7 +263,17 @@ export function materialize() {
     if (!state) return;
     installWrappers();
     subscribeFlux();
-    for (const account of state.accounts) syncAccount(account.id);
+    syncAll();
+}
+
+function syncAll() {
+    for (const account of labState()?.accounts ?? []) {
+        try {
+            syncAccount(account.id);
+        } catch (e) {
+            logger.error(`Test lab couldn't set up ${account.username}`, e);
+        }
+    }
 }
 
 function deleteChannels(channelIds: string[]) {
@@ -250,7 +281,7 @@ function deleteChannels(channelIds: string[]) {
     if (current && channelIds.includes(current)) NavigationRouter.transitionTo("/channels/@me");
     for (const id of channelIds) {
         const channel = ChannelStore.getChannel(id);
-        if (channel) FluxDispatcher.dispatch({ type: "CHANNEL_DELETE", channel: { id, type: channel.type, guild_id: null } });
+        if (channel) FluxDispatcher.dispatch({ type: "CHANNEL_DELETE", channel });
     }
 }
 
@@ -328,6 +359,8 @@ export async function clearMessages(accountId: string) {
     const channelId = channelOf(accountId);
     if (!channelId) return;
     await updateLab(draft => void delete draft.messages[channelId]);
+    resetChannelApproval(channelId);
+    resetWarnings(channelId);
     loadMessages(channelId);
 }
 
@@ -354,8 +387,7 @@ export function watchEdits() {
         syncing = true;
         queueMicrotask(() => {
             syncing = false;
-            const state = labState();
-            if (state) for (const a of state.accounts) syncAccount(a.id);
+            syncAll();
         });
     });
 }

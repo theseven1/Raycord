@@ -17,8 +17,9 @@ import { flaggedBy, VerdictChip } from "../shared";
 
 const firstWarned = new Map<string, string>();
 
-export function resetWarnings() {
-    firstWarned.clear();
+export function resetWarnings(channelId?: string) {
+    if (!channelId) return firstWarned.clear();
+    for (const key of firstWarned.keys()) if (key.startsWith(`${channelId}:`)) firstWarned.delete(key);
 }
 
 export function ChatWarning({ message }: { message: Message; }) {

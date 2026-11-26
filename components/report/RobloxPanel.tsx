@@ -124,7 +124,7 @@ export function RobloxPanel({ report }: { report: RaywardReport; }) {
         .map(entry => ({ ...entry, rank: accountRank(entry.c.robloxUserId) }))
         .sort((a, b) => b.rank - a.rank);
     if (!linked.length && !report.discordAlts?.length) {
-        return <div className={cl("empty", "enter")}>Rotector has no Roblox accounts linked to this Discord account.</div>;
+        return <div className={cl("empty", "enter")}>Rotector has no Roblox accounts linked to this account.</div>;
     }
 
     return (

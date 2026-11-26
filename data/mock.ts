@@ -60,7 +60,7 @@ export interface MockAccount {
     otherDiscord: MockOtherAccount[];
 }
 
-export interface MockMessage { id: string; authorId: string; content: string; timestamp: number; }
+export interface MockMessage { id: string; authorId: string; content: string; timestamp: number; stickerIds?: string[]; }
 
 export interface MockExtraSource { id: string; name: string; description: string; discord: boolean; roblox: boolean; }
 
@@ -461,8 +461,9 @@ export function normalizeState(raw: unknown): TestLabState {
     if (isRecord(raw.messages)) {
         for (const [channelId, list] of Object.entries(raw.messages)) {
             if (!channelIds.has(channelId) || !Array.isArray(list)) continue;
-            messages[channelId] = list.filter((m): m is MockMessage =>
-                isRecord(m) && typeof m.id === "string" && typeof m.authorId === "string" && typeof m.content === "string" && typeof m.timestamp === "number");
+            messages[channelId] = list
+                .filter((m): m is MockMessage => isRecord(m) && typeof m.id === "string" && typeof m.authorId === "string" && typeof m.content === "string" && typeof m.timestamp === "number")
+                .map(m => Array.isArray(m.stickerIds) ? { ...m, stickerIds: m.stickerIds.filter(id => typeof id === "string" && SNOWFLAKE.test(id)) } : m);
         }
     }
 

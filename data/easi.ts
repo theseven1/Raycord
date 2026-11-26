@@ -19,11 +19,11 @@ export async function verifyEasiSecret(secret: string): Promise<EasiVerification
     if (!secret) return { ok: false, reason: "Enter a secret first." };
 
     const result = await fetchWithRetry(`${EASI_API}/1`, { headers: { "X-Internal-Secret": secret } });
-    if (result.failure || result.status === 0) return { ok: false, reason: "Couldn't reach EASI. Check your connection and try again." };
+    if (result.failure || result.status === 0) return { ok: false, reason: "Couldn't reach EASI." };
     if (result.status === 401 || result.status === 403) return { ok: false, reason: "EASI rejected this secret." };
-    if (result.status >= 500) return { ok: false, reason: `EASI returned an error (HTTP ${result.status}). Try again later.` };
+    if (result.status >= 500) return { ok: false, reason: `EASI error (HTTP ${result.status}). Try again later.` };
     if (result.status >= 200 && result.status < 300 || result.status === 404) return { ok: true };
-    return { ok: false, reason: `Unexpected answer from EASI (HTTP ${result.status}).` };
+    return { ok: false, reason: `Unexpected EASI response (HTTP ${result.status}).` };
 }
 
 export const easiStore = createSourceStore<EasiResult>({

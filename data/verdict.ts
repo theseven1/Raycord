@@ -9,6 +9,7 @@ import type { EasiResult, FailedSource, Finding, RaywardFlagType, RaywardProvide
 
 const PROVISIONAL_FLAG = 4;
 const PAST_OFFENDER_FLAG = 6;
+const SPECIAL_LABELS: Record<number, string> = { [PROVISIONAL_FLAG]: "Provisional", [PAST_OFFENDER_FLAG]: "Past offender" };
 
 export const TONE_RANK: Record<Tone, number> = { safe: 0, pending: 1, provisional: 2, mixed: 3, unsafe: 4 };
 export const worstTone = (tones: Tone[]): Tone => tones.reduce<Tone>((a, b) => TONE_RANK[b] > TONE_RANK[a] ? b : a, "safe");
@@ -35,7 +36,7 @@ export function toneOf(provider: RaywardProvider, result: RaywardResult | null):
 
 export function statusLabel(provider: RaywardProvider, result: RaywardResult | null): string {
     if (!result || result.flagType === 0) return "Not flagged";
-    return result.statusLabel ?? flagTypeOf(provider, result)?.name ?? `Status ${result.flagType}`;
+    return result.statusLabel ?? flagTypeOf(provider, result)?.name ?? SPECIAL_LABELS[result.flagType] ?? `Status ${result.flagType}`;
 }
 
 export const isActionable = (provider: RaywardProvider, result: RaywardResult | null) =>

@@ -28,7 +28,8 @@ const thresholdOptions = (defaultValue: Severity) => [
 export const settings = definePluginSettings({
     raywardApiKey: {
         type: OptionType.STRING,
-        description: "Rayward API key",
+        displayName: "API key",
+        description: "Your Rayward API key",
         default: "",
         placeholder: "rwd_...",
         onChange: () => void clearCaches(),
@@ -43,20 +44,23 @@ export const settings = definePluginSettings({
     },
     enableRobloxProfiles: {
         type: OptionType.BOOLEAN,
-        description: "Display linked Roblox accounts in full reports",
+        displayName: "Roblox accounts",
+        description: "Show linked Roblox accounts in reports",
         default: true,
     },
 
     showInProfile: {
         type: OptionType.BOOLEAN,
+        displayName: "Profile section",
         description: "Show Rayward in profiles and DM sidebars",
         default: true,
         restartNeeded: true,
     },
-    defaultExpanded: { type: OptionType.BOOLEAN, description: "Open the profile section by default", default: true },
+    defaultExpanded: { type: OptionType.BOOLEAN, displayName: "Start expanded", description: "Expand the profile section by default", default: true },
     defaultTab: {
         type: OptionType.SELECT,
-        description: "Tab to open in profile reports",
+        displayName: "Default tab",
+        description: "Tab the profile section opens on",
         options: [
             { label: "Overview", value: "overview", default: true },
             { label: "Sources", value: "sources" },
@@ -65,17 +69,20 @@ export const settings = definePluginSettings({
     },
     showMemberListIndicator: {
         type: OptionType.BOOLEAN,
-        description: "Check users visible in the member list",
+        displayName: "Member list markers",
+        description: "Mark flagged users in the member list",
         default: false,
     },
     showMessageIndicator: {
         type: OptionType.BOOLEAN,
-        description: "Check users visible in chat",
+        displayName: "Chat markers",
+        description: "Mark flagged users in chat",
         default: false,
     },
     indicatorStyle: {
         type: OptionType.SELECT,
-        description: "Indicator style",
+        displayName: "Marker style",
+        description: "How markers look",
         options: [
             { label: "Icon", value: "icon", default: true },
             { label: "Dot", value: "dot" },
@@ -84,40 +91,54 @@ export const settings = definePluginSettings({
     },
     indicatorThreshold: {
         type: OptionType.SELECT,
-        description: "Lowest flag level that displays an indicator",
+        displayName: "Marker level",
+        description: "Lowest level that shows a marker",
         options: thresholdOptions(Severity.Moderate),
     },
 
     sendGuard: {
         type: OptionType.BOOLEAN,
-        description: "Warn you before interacting with flagged user",
+        displayName: "Send warning",
+        description: "Warn you before messaging a flagged user",
         default: true,
     },
     sendGuardThreshold: {
         type: OptionType.SELECT,
-        description: "Lowest flag level that triggers the warning",
+        displayName: "Send warning level",
+        description: "Lowest level that triggers the warning",
         options: thresholdOptions(Severity.Moderate),
     },
     warnInChat: {
         type: OptionType.BOOLEAN,
-        description: "Show a warning under a flagged user's first message in a channel",
+        displayName: "Chat warnings",
+        description: "Show a warning under a flagged user's first message",
         default: false,
     },
-    notifyOnFlaggedDm: { type: OptionType.BOOLEAN, description: "Notify when a flagged user DMs you", default: false },
+    notifyOnFlaggedDm: { type: OptionType.BOOLEAN, displayName: "DM notifications", description: "Notify when a flagged user DMs you", default: false },
     warnThreshold: {
         type: OptionType.SELECT,
-        description: "Lowest flag level for chat warnings and DM notifications",
+        displayName: "Chat warning level",
+        description: "Lowest level for chat warnings and notifications",
         options: thresholdOptions(Severity.High),
     },
-    ignoreBots: { type: OptionType.BOOLEAN, description: "Skip bots", default: true },
-    ignoreFriends: { type: OptionType.BOOLEAN, description: "Skip friends", default: false },
+    ignoreBots: { type: OptionType.BOOLEAN, displayName: "Skip bots", description: "No checks, markers or warnings for bots", default: true },
+    ignoreFriends: { type: OptionType.BOOLEAN, displayName: "Skip friends", description: "No markers or warnings for friends", default: false },
 
     cacheTtlMinutes: {
-        type: OptionType.SLIDER,
-        description: "",
-        markers: [5, 15, 30, 60, 180, 360, 1440, 4320, 10080],
-        default: 1440,
-        stickToMarkers: true,
+        type: OptionType.SELECT,
+        displayName: "Cache duration",
+        description: "How long to keep results",
+        options: [
+            { label: "5 minutes", value: 5 },
+            { label: "15 minutes", value: 15 },
+            { label: "30 minutes", value: 30 },
+            { label: "1 hour", value: 60 },
+            { label: "3 hours", value: 180 },
+            { label: "6 hours", value: 360 },
+            { label: "1 day", value: 1440, default: true },
+            { label: "3 days", value: 4320 },
+            { label: "7 days", value: 10080 },
+        ],
         onChange: () => void clearCaches(),
     },
     clearCache: {

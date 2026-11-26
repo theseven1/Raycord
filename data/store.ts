@@ -166,7 +166,7 @@ export function createSourceStore<V>(opts: SourceStoreOptions<V>): SourceStore<V
             const attempts = (failures.get(key)?.attempts ?? 0) + 1;
             const backoff = FAILURE_BACKOFF_MS[Math.min(attempts, FAILURE_BACKOFF_MS.length) - 1];
             failures.set(key, { error, attempts, retryAt: Date.now() + backoff });
-            logger.warn(`[${opts.name}] ${key} failed (${error.kind}): ${error.message}`);
+            if (!isIntercepted(key)) logger.warn(`[${opts.name}] ${key} failed (${error.kind}): ${error.message}`);
         }
 
         inFlight.delete(key);

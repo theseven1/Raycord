@@ -1,10 +1,10 @@
 # Contributing
 
-Thanks for helping out. This file covers the local setup, what CI checks, and how a change becomes a release.
+Thanks for helping out.
 
 ## Before you start
 
-For anything bigger than a small fix, open an issue or a discussion first so we can agree on the approach before you write the code. Problems with a specific flag belong to the source that issued it, not here.
+For anything bigger than a small fix, open an issue or discussion first so we can agree on the approach. Problems with a specific flag go to the source that issued it.
 
 ## Setup
 
@@ -21,7 +21,7 @@ pnpm inject
 
 `pnpm watch` rebuilds on save. Reload Discord with Ctrl+R to pick up changes. [docs/development.md](docs/development.md) has more on debugging and testing against a live client.
 
-For manual feature checks, start the test lab from the Vencord toolbox and try its presets and editors with fake accounts.
+To try a change by hand, open **Rayward: Test lab** from the Vencord toolbox. It gives you fake accounts with any result you want, no API key needed.
 
 ## Checks
 

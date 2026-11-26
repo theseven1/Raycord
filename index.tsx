@@ -41,7 +41,7 @@ migratePluginSettings(PLUGIN_NAME, PREVIOUS_PLUGIN_NAME);
 
 const reportMenuItem: NavContextMenuPatchCallback = (children, props: { user?: User; }) => {
     const userId = props?.user?.id;
-    if (!userId) return;
+    if (!userId || settings.store.ignoreBots && props.user?.bot) return;
 
     children.push(
         <Menu.MenuSeparator />,
@@ -78,7 +78,7 @@ const dmRecipients = (channel: Channel | undefined) =>
 
 export default definePlugin({
     name: "Raycord",
-    description: "Shows safety flags from Rayward's sources in profiles, chat and the member list.",
+    description: "Shows Rayward safety flags in profiles, chat and the member list.",
     authors: [{ name: "MkSeven1", id: 1356781561277579465n }],
     tags: ["Privacy", "Utility", "Servers"],
     searchTerms: ["raycord", "rayward", "rotector", "tase", "rab", "okappiki", "serversweep", "rolock", "rcr", "roblox", "safety"],
@@ -99,10 +99,10 @@ export default definePlugin({
         <div className={cl("scope", "about")}>
             <RaywardWordmark height={22} />
             <Paragraph>
-                Raycord checks Discord users against the safety sources on <Link href={RAYWARD_SITE}>Rayward</Link>.
+                Checks Discord users against the safety sources on <Link href={RAYWARD_SITE}>Rayward</Link>.
             </Paragraph>
             <Paragraph>
-                You need your own Rayward API key, entered below.
+                Needs your own Rayward API key.
             </Paragraph>
         </div>
     ),
@@ -177,11 +177,11 @@ export default definePlugin({
     commands: [
         {
             name: "rayward",
-            description: "Check a Discord user across Rayward sources (only you see the result)",
+            description: "Check a Discord user on Rayward. Only you see the result.",
             inputType: ApplicationCommandInputType.BUILT_IN,
             options: [{
                 name: "user",
-                description: "The user to check. Defaults to yourself.",
+                description: "User to check. Defaults to you.",
                 type: ApplicationCommandOptionType.USER,
                 required: false,
             }],
@@ -199,7 +199,7 @@ export default definePlugin({
         },
         ...(["user", "group"] as const).map(kind => ({
             name: kind === "user" ? "rayward-roblox" : "rayward-group",
-            description: `Check a Roblox ${kind} across Rayward sources (only you see the result)`,
+            description: `Check a Roblox ${kind} on Rayward. Only you see the result.`,
             inputType: ApplicationCommandInputType.BUILT_IN,
             options: [{
                 name: "id",
@@ -210,7 +210,7 @@ export default definePlugin({
             async execute(args, ctx) {
                 const id = findOption<string>(args, "id")?.trim() ?? "";
                 if (!/^\d{1,20}$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
-                    sendEmbed(ctx.channel.id, noticeEmbed("Enter a valid Roblox ID", `"${id}" isn't a Roblox ${kind} ID. IDs are numbers only.`));
+                    sendEmbed(ctx.channel.id, noticeEmbed("Enter a valid Roblox ID", "Roblox IDs are numbers only."));
                     return;
                 }
                 try {

@@ -11,7 +11,7 @@ pnpm inject
 pnpm watch
 ```
 
-Dev builds are unminified and include Vencord's developer plugins. Reload Discord with Ctrl+R after each rebuild. The plugin's console messages are labelled Raycord.
+Dev builds are unminified and include Vencord's developer plugins. Reload Discord with Ctrl+R after each rebuild. Console messages from the plugin are labelled Raycord.
 
 For a disposable client, the browser build works well: `pnpm buildWeb --dev`, load `dist/chromium-unpacked` and log in with a test account.
 
@@ -25,7 +25,7 @@ The tests bundle the real `data/` modules with esbuild, swap Vencord and Discord
 
 ## Test lab
 
-Open the Vencord toolbox, choose **Rayward: Test lab**, start a session, then use its presets, editors and raw JSON controls. Stop the session to remove the fake DMs and profiles.
+**Rayward: Test lab** in the Vencord toolbox creates fake accounts, each with a DM and a profile. Their results come from the presets and editors, so you can check every state without an API key or a real flagged account. Typing in a fake DM, waving and sending stickers stay local, and the send warning works as usual. **Stop and delete all** removes the DMs, profiles and saved session.
 
 ## Linting
 

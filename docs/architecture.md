@@ -58,7 +58,9 @@ The source list (`data/providers.ts`) is cached for an hour. If refreshing it fa
 
 ## Test lab
 
-The test lab intercepts lookup stores in `data/store.ts` for IDs in its local registry. Mock Discord and Roblox IDs are answered client-side and never reach the network. Fake DMs and profiles are materialized in the current Discord client only.
+`data/mock.ts` holds the test lab's fake accounts and registers an interceptor with `data/store.ts`. Any store key for a fake Discord or Roblox ID is answered from that registry, so it never reaches the network. Presets in `data/mockPresets.ts` follow the flag types each source allows per endpoint, as listed in Rayward's API spec.
+
+`lib/testSession.ts` makes the fake accounts look real in Discord: it dispatches the user, profile and DM channel as Flux events, answers Discord's own API calls for those IDs locally (profile and messages, 404 for anything else), and keeps your messages in a fake DM on the client.
 
 ## Send guard
 

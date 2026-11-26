@@ -28,7 +28,7 @@ function SendGuardModal({ modalProps, user, verdict, resolve }: {
         <ConfirmModal
             {...modalProps}
             title={`Before you message ${user.username}`}
-            subtitle={`This is your first message to ${user.username}, and ${flaggedBy(verdict)} flagged this account.`}
+            subtitle={`${flaggedBy(verdict)} flagged this account.`}
             confirmText="Send anyway"
             cancelText="Don't send"
             variant="critical-primary"
@@ -54,7 +54,7 @@ function SendGuardModal({ modalProps, user, verdict, resolve }: {
                     ))}
                 </ul>
                 <p className={cl("muted", "guard-footnote")}>
-                    A flag is a reason to look closer, not proof on its own. This only appears before your first message.
+                    A flag isn't proof. You only see this before your first message.
                 </p>
             </div>
         </ConfirmModal>

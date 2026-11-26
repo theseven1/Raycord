@@ -60,6 +60,11 @@ export async function clearDismissed() {
 const pending = new Map<string, Promise<boolean>>();
 const approvedUntil = new Map<string, number>();
 
+export function resetChannelApproval(channelId: string) {
+    approvedUntil.delete(channelId);
+    pending.delete(channelId);
+}
+
 async function verdictWithin(userId: string): Promise<Verdict | null> {
     const cached = peekVerdict(userId);
     if (cached) return cached;

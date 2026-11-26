@@ -46,5 +46,5 @@ export function EasiCard({ flags, index, showAccount = true }: { flags: EasiFlag
 }
 
 export function EasiRejectedNotice() {
-    return <div className={cl("notice")}>EASI secret rejected or invalid.</div>;
+    return <div className={cl("notice")}>EASI rejected your secret.</div>;
 }

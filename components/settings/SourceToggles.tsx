@@ -22,7 +22,7 @@ export function SourceToggles() {
             <h3 className={cl("settings-heading")}>Sources</h3>
             {!providers && (
                 <p className={cl("muted")}>
-                    {error ? `Couldn't load the source list (${describeError(error)}).` : "Loading the source list.."}
+                    {error ? `Couldn't load sources (${describeError(error)}).` : "Loading sources"}
                 </p>
             )}
             {providers?.map(provider => (

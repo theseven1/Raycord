@@ -5,97 +5,209 @@
  */
 
 import { Button } from "@components/Button";
+import { useState } from "@webpack/common";
 
 import { describeError, makeError } from "../../data/errors";
-import { ERROR_KINDS, type MockSource, type MockSourceState, nowSeconds, TEST_FLAG_TYPES } from "../../data/mock";
-import { exampleServer, flagFor, outfitReason, textReason, userReason } from "../../data/mockPresets";
-import type { RaywardEvidence, RaywardProvider, RaywardReason } from "../../data/types";
+import { ERROR_KINDS, type MockResult, type MockSource, type MockSourceState, nowSeconds } from "../../data/mock";
+import { allowedFlags, exampleServer, flagFor, type LabSubject, outfitReason, relabel, statusFor, textReason, userReason } from "../../data/mockPresets";
+import type { DiscordGuildEvidence, RaywardEvidence, RaywardProvider, RaywardReason } from "../../data/types";
 import { cl } from "../../lib/utils";
 import { SourceLogo } from "../brand/Brand";
-import { LabField, LabSelect, LabSwitch, LabText } from "./fields";
+import { Choice, Field, optional, TextField, Toggle, wholeNumber } from "./fields";
 
-const states: MockSourceState[] = ["none", "ok", "checking", ...ERROR_KINDS];
+const STATE_OPTIONS: { label: string; value: MockSourceState; }[] = [
+    { label: "No record", value: "none" },
+    { label: "Has a record", value: "ok" },
+    { label: "Still checking", value: "checking" },
+    ...ERROR_KINDS.map(kind => ({ label: `Error: ${describeError(makeError(kind, ""))}`, value: kind })),
+];
 
-export function SourceEditor({ providers, sources, subjectId, onChange }: { providers: RaywardProvider[]; sources: Record<string, MockSource>; subjectId: string; onChange(id: string, source: MockSource): void; }) {
-    return <div className={cl("lab-grid")}>{providers.map(provider => {
-        const source = sources[provider.id] ?? { state: "none" as const };
-        const result = source.result ?? {};
-        const flags = [...provider.flagTypes];
-        for (const special of TEST_FLAG_TYPES.filter(f => [4, 6].includes(f.value))) {
-            if (!flags.some(f => f.value === special.value)) flags.push(special);
-        }
-        const updateResult = (patch: NonNullable<MockSource["result"]>) => onChange(provider.id, { ...source, state: "ok", result: { ...result, ...patch } });
-        return <div key={provider.id} className={cl("lab-source", "lab-card")}>
-            <div className={cl("lab-source-head")}><SourceLogo provider={provider} height={18} /><strong>{provider.name}</strong></div>
-            <LabSelect<MockSourceState> options={states.map(state => ({ value: state, label: state === "none" ? "No record" : state === "ok" ? "Has a record" : state === "checking" ? "Still checking" : `Error: ${describeError(makeError(state, ""))}` }))} value={source.state} onChange={state => onChange(provider.id, { ...source, state, ...(state === "ok" && result.flagType === undefined ? { result: { ...result, flagType: flagFor(provider, "unsafe") } } : {}) })} />
-            {source.state === "ok" && <>
-                <LabSelect options={flags.map(flag => ({ value: String(flag.value), label: `${flag.name} (${flag.value})` }))} value={String(result.flagType ?? flagFor(provider, "unsafe"))} onChange={value => updateResult({ flagType: Number(value) })} />
-                <LabText value={result.statusLabel ?? ""} placeholder="Status label" onCommit={statusLabel => updateResult({ statusLabel: statusLabel || undefined })} />
-                <LabText value={result.headerMessage ?? ""} placeholder="Header message" onCommit={headerMessage => updateResult({ headerMessage: headerMessage || undefined })} />
-                <LabText value={result.categoryLabel ?? ""} placeholder="Category label" onCommit={categoryLabel => updateResult({ categoryLabel: categoryLabel || undefined })} />
-                <LabText value={result.reviewer?.displayName ?? ""} placeholder="Reviewer display name" onCommit={displayName => updateResult({ reviewer: displayName ? { username: displayName, displayName } : undefined })} />
-                <LabSwitch label="Locked" checked={!!result.isLocked} onChange={isLocked => updateResult({ isLocked })} />
-                <LabSwitch label="Processed" checked={!!result.processed} onChange={processed => updateResult({ processed })} />
-                <LabField label="Queued hours ago"><LabText value={result.queuedAt ? String(Math.max(0, Math.round((nowSeconds() - result.queuedAt) / 3600))) : ""} onCommit={v => updateResult({ queuedAt: v ? nowSeconds() - Number(v) * 3600 : undefined })} validate={v => v && !/^\d+$/.test(v) ? "Enter hours as a whole number" : undefined} /></LabField>
-                <LabField label="Updated days ago"><LabText value={result.lastUpdated ? String(Math.max(0, Math.round((nowSeconds() - result.lastUpdated) / 86400))) : ""} onCommit={v => updateResult({ lastUpdated: v ? nowSeconds() - Number(v) * 86400 : undefined })} validate={v => v && !/^\d+$/.test(v) ? "Enter days as a whole number" : undefined} /></LabField>
-                <ReasonsEditor title="Reasons" reasons={result.reasons ?? []} subjectId={subjectId} onChange={reasons => updateResult({ reasons })} />
-                <ReasonsEditor title="Provisional reasons" reasons={result.provisionalReasons ?? []} subjectId={subjectId} onChange={provisionalReasons => updateResult({ provisionalReasons })} />
-            </>}
-        </div>;
-    })}</div>;
+const HOUR = 3600;
+const DAY = 86_400;
+
+const ago = (ts: number | undefined, unit: number) => ts ? String(Math.max(0, Math.round((nowSeconds() - ts) / unit))) : "";
+const fromAgo = (value: string, unit: number) => value.trim() ? nowSeconds() - Number(value) * unit : undefined;
+
+export function SourceEditor({ subject, providers, sources, subjectId, onChange }: {
+    subject: LabSubject;
+    providers: RaywardProvider[];
+    sources: Record<string, MockSource>;
+    subjectId: string;
+    onChange(providerId: string, source: MockSource): void;
+}) {
+    if (!providers.length) return <p className={cl("muted")}>Rayward's source list hasn't loaded yet.</p>;
+
+    return (
+        <div className={cl("lab-sources")}>
+            {providers.map(provider => (
+                <SourceRow
+                    key={provider.id}
+                    subject={subject}
+                    provider={provider}
+                    source={sources[provider.id] ?? { state: "none" }}
+                    subjectId={subjectId}
+                    onChange={next => onChange(provider.id, next)}
+                />
+            ))}
+        </div>
+    );
 }
 
-function ReasonsEditor({ title, reasons, subjectId, onChange }: { title: string; reasons: RaywardReason[]; subjectId: string; onChange(reasons: RaywardReason[]): void; }) {
-    const updateReason = (index: number, mutate: (reason: RaywardReason) => void) => onChange(reasons.map((reason, i) => {
+function SourceRow({ subject, provider, source, subjectId, onChange }: { subject: LabSubject; provider: RaywardProvider; source: MockSource; subjectId: string; onChange(source: MockSource): void; }) {
+    const [open, setOpen] = useState(false);
+    const result = source.result ?? {};
+    const hasRecord = source.state === "ok";
+    const update = (patch: MockResult) => onChange({ state: "ok", result: { ...result, ...patch } });
+
+    const flags = allowedFlags(provider, subject).map(t => ({ label: statusFor(provider, t.value) ?? t.name, value: t.value }));
+    const setFlag = (flagType: number) => onChange({ state: "ok", result: relabel(provider, subject, result, flagType, subjectId) });
+    const setState = (state: MockSourceState) => onChange({
+        state,
+        result: state === "ok" && result.flagType === undefined ? relabel(provider, subject, result, flagFor(provider, "unsafe", subject) ?? 0, subjectId) : source.result,
+    });
+
+    return (
+        <div className={cl("lab-source")}>
+            <div className={cl("lab-source-row")}>
+                <div className={cl("lab-source-name")}><SourceLogo provider={provider} height={16} /></div>
+                <Choice options={STATE_OPTIONS} value={source.state} onChange={setState} />
+                <Choice options={flags} value={hasRecord ? result.flagType ?? 0 : undefined} onChange={setFlag} disabled={!hasRecord} />
+                <Button size="small" variant="secondary" disabled={!hasRecord} onClick={() => setOpen(o => !o)}>
+                    {open && hasRecord ? "Hide" : "Details"}
+                </Button>
+            </div>
+            {open && hasRecord && (
+                <div className={cl("lab-details")}>
+                    <div className={cl("lab-grid")}>
+                        <Field label="Status label">
+                            <TextField value={result.statusLabel ?? ""} placeholder="Uses the flag name" onCommit={v => update({ statusLabel: optional(v) })} />
+                        </Field>
+                        <Field label="Message" wide>
+                            <TextField multiline rows={2} value={result.headerMessage ?? ""} onCommit={v => update({ headerMessage: optional(v) })} />
+                        </Field>
+                        {subject === "roblox" && <>
+                            <Field label="Category">
+                                <TextField value={result.categoryLabel ?? ""} onCommit={v => update({ categoryLabel: optional(v), category: optional(v)?.toLowerCase() })} />
+                            </Field>
+                            <Field label="Reviewed by">
+                                <TextField value={result.reviewer?.displayName ?? ""} onCommit={v => update({ reviewer: optional(v) ? { username: v.trim(), displayName: v.trim() } : undefined })} />
+                            </Field>
+                            <Field label="Queued (hours ago)">
+                                <TextField value={ago(result.queuedAt, HOUR)} validate={wholeNumber} onCommit={v => update({ queuedAt: fromAgo(v, HOUR) })} />
+                            </Field>
+                            <Field label="Updated (days ago)">
+                                <TextField value={ago(result.lastUpdated, DAY)} validate={wholeNumber} onCommit={v => update({ lastUpdated: fromAgo(v, DAY) })} />
+                            </Field>
+                            <div className={cl("lab-toggles")}>
+                                <Toggle label="Locked" checked={!!result.isLocked} onChange={isLocked => update({ isLocked })} />
+                                <Toggle label="Processed" checked={!!result.processed} onChange={processed => update({ processed, processedAt: processed ? result.processedAt ?? nowSeconds() : undefined })} />
+                            </div>
+                        </>}
+                    </div>
+                    <ReasonList title="Reasons" reasons={result.reasons ?? []} subjectId={subjectId} onChange={reasons => update({ reasons })} />
+                    {subject === "roblox" && <ReasonList title="Provisional reasons" reasons={result.provisionalReasons ?? []} subjectId={subjectId} onChange={provisionalReasons => update({ provisionalReasons })} />}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ReasonList({ title, reasons, subjectId, onChange }: { title: string; reasons: RaywardReason[]; subjectId: string; onChange(reasons: RaywardReason[]): void; }) {
+    const edit = (index: number, mutate: (reason: RaywardReason) => void) => onChange(reasons.map((reason, i) => {
         if (i !== index) return reason;
         const next = structuredClone(reason);
         mutate(next);
         return next;
     }));
-    const addReason = () => onChange([...reasons, textReason("New reason")]);
-    const addEvidence = (index: number, evidence: RaywardEvidence) => updateReason(index, reason => { reason.evidence = [...(reason.evidence ?? []), evidence]; });
-    return <div className={cl("lab-field")}>
-        <strong>{title}</strong>
-        {reasons.map((reason, index) => <div className={cl("lab-reason")} key={`${reason.type}-${index}`}>
-            <LabText value={reason.title} placeholder="Reason title" onCommit={title => updateReason(index, r => { r.title = title; })} />
-            <LabText value={reason.sources[0]?.label ?? ""} placeholder="Detector label" onCommit={label => updateReason(index, r => { r.sources = [{ ...(r.sources[0] ?? { id: "test" }), label }]; })} />
-            {(reason.evidence ?? []).map((evidence, evidenceIndex) => <EvidenceEditor key={evidenceIndex} evidence={evidence} onChange={next => updateReason(index, r => { r.evidence = [...(r.evidence ?? [])].map((item, i) => i === evidenceIndex ? next : item); })} />)}
-            <div className={cl("lab-bar")}>
-                <Button size="small" variant="secondary" onClick={() => addEvidence(index, { kind: "text", text: "Example evidence" })}>Text</Button>
-                <Button size="small" variant="secondary" onClick={() => addEvidence(index, outfitReason().evidence![0])}>Outfit</Button>
-                <Button size="small" variant="secondary" onClick={() => addEvidence(index, exampleServer(subjectId, "Example server"))}>Server</Button>
-                <Button size="small" variant="secondary" onClick={() => addEvidence(index, userReason(subjectId).evidence![0])}>Discord user</Button>
-                <Button size="small" variant="dangerPrimary" onClick={() => onChange(reasons.filter((_, i) => i !== index))}>Remove reason</Button>
+    const addEvidence = (index: number, evidence: RaywardEvidence) => edit(index, r => {
+        r.evidence = [...r.evidence ?? [], evidence];
+    });
+
+    return (
+        <div className={cl("lab-reasons")}>
+            <div className={cl("lab-reasons-head")}>
+                <span className={cl("lab-label")}>{title}</span>
+                <Button size="small" variant="secondary" onClick={() => onChange([...reasons, textReason("New reason")])}>Add reason</Button>
             </div>
-        </div>)}
-        <Button size="small" variant="secondary" onClick={addReason}>Add reason</Button>
-    </div>;
+            {reasons.map((reason, index) => (
+                <div className={cl("lab-reason")} key={index}>
+                    <div className={cl("lab-grid")}>
+                        <Field label="Title">
+                            <TextField value={reason.title} onCommit={v => edit(index, r => { r.title = v; })} />
+                        </Field>
+                        <Field label="Detected by">
+                            <TextField value={reason.sources[0]?.label ?? ""} onCommit={v => edit(index, r => { r.sources = v.trim() ? [{ ...r.sources[0] ?? { id: "test" }, label: v.trim() }] : []; })} />
+                        </Field>
+                    </div>
+                    {(reason.evidence ?? []).map((evidence, i) => (
+                        <EvidenceRow
+                            key={i}
+                            evidence={evidence}
+                            onChange={next => edit(index, r => { r.evidence = r.evidence!.map((e, j) => j === i ? next : e); })}
+                            onRemove={() => edit(index, r => { r.evidence = r.evidence!.filter((_, j) => j !== i); })}
+                        />
+                    ))}
+                    <div className={cl("lab-actions")}>
+                        <span className={cl("muted")}>Add evidence:</span>
+                        <Button size="small" variant="secondary" onClick={() => addEvidence(index, { kind: "text", text: "Example evidence" })}>Text</Button>
+                        <Button size="small" variant="secondary" onClick={() => addEvidence(index, outfitReason().evidence![0])}>Outfit</Button>
+                        <Button size="small" variant="secondary" onClick={() => addEvidence(index, exampleServer(subjectId))}>Server</Button>
+                        <Button size="small" variant="secondary" onClick={() => addEvidence(index, userReason(subjectId).evidence![0])}>Discord user</Button>
+                        <span className={cl("lab-spacer")} />
+                        <Button size="small" variant="dangerSecondary" onClick={() => onChange(reasons.filter((_, i) => i !== index))}>Remove reason</Button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }
 
-function EvidenceEditor({ evidence, onChange }: { evidence: RaywardEvidence; onChange(evidence: RaywardEvidence): void; }) {
-    if (evidence.kind === "text") {
-        const textEvidence = evidence as Extract<RaywardEvidence, { kind: "text"; }>;
-        return <LabText multiline value={textEvidence.text} onCommit={text => onChange({ ...textEvidence, text })} placeholder="Evidence text" />;
+const EVIDENCE_NAMES: Record<string, string> = { text: "Text", outfit: "Outfit", discordGuild: "Server", discordUser: "Discord user" };
+
+function EvidenceRow({ evidence, onChange, onRemove }: { evidence: RaywardEvidence; onChange(e: RaywardEvidence): void; onRemove(): void; }) {
+    return (
+        <div className={cl("lab-evidence")}>
+            <div className={cl("lab-evidence-head")}>
+                <span className={cl("lab-label")}>{EVIDENCE_NAMES[evidence.kind] ?? evidence.kind}</span>
+                <Button size="min" variant="dangerSecondary" onClick={onRemove}>Remove</Button>
+            </div>
+            <EvidenceFields evidence={evidence} onChange={onChange} />
+        </div>
+    );
+}
+
+function EvidenceFields({ evidence, onChange }: { evidence: RaywardEvidence; onChange(e: RaywardEvidence): void; }) {
+    switch (evidence.kind) {
+        case "text": {
+            const e = evidence as Extract<RaywardEvidence, { kind: "text"; }>;
+            return <TextField multiline rows={2} value={e.text} onCommit={text => onChange({ ...e, text })} />;
+        }
+        case "outfit": {
+            const e = evidence as Extract<RaywardEvidence, { kind: "outfit"; }>;
+            return (
+                <div className={cl("lab-grid")}>
+                    <Field label="Name"><TextField value={e.name} onCommit={name => onChange({ ...e, name })} /></Field>
+                    <Field label="Category"><TextField value={e.category} onCommit={category => onChange({ ...e, category })} /></Field>
+                    <Field label="Description" wide><TextField multiline rows={2} value={e.description} onCommit={description => onChange({ ...e, description })} /></Field>
+                </div>
+            );
+        }
+        case "discordGuild": {
+            const e = evidence as DiscordGuildEvidence;
+            return (
+                <div className={cl("lab-grid")}>
+                    <Field label="Server name"><TextField value={e.name ?? e.safeName} onCommit={name => onChange({ ...e, name, safeName: name })} /></Field>
+                    <Field label="Types"><TextField value={e.types.join(", ")} placeholder="Comma separated" onCommit={v => onChange({ ...e, types: v.split(",").map(s => s.trim()).filter(Boolean) })} /></Field>
+                    <Field label="Messages"><TextField value={String(e.messages ?? 0)} validate={wholeNumber} onCommit={v => onChange({ ...e, messages: Number(v) || 0 })} /></Field>
+                    <Field label="Joined (days ago)"><TextField value={ago(e.joinedAt ?? undefined, DAY)} validate={wholeNumber} onCommit={v => onChange({ ...e, joinedAt: fromAgo(v, DAY) ?? null })} /></Field>
+                </div>
+            );
+        }
+        case "discordUser": {
+            const e = evidence as Extract<RaywardEvidence, { kind: "discordUser"; }>;
+            return <TextField value={e.discordId} validate={v => /^\d{15,21}$/.test(v) ? undefined : "Use a Discord user ID"} onCommit={discordId => onChange({ ...e, discordId })} />;
+        }
+        default:
+            return <p className={cl("muted")}>Edit this one in the Session tab.</p>;
     }
-    if (evidence.kind === "outfit") {
-        const outfit = evidence as Extract<RaywardEvidence, { kind: "outfit"; }>;
-        return <div className={cl("lab-evidence")}>
-        <LabText value={outfit.name} onCommit={name => onChange({ ...outfit, name })} placeholder="Outfit name" />
-        <LabText value={outfit.category} onCommit={category => onChange({ ...outfit, category })} placeholder="Category" />
-        <LabText multiline value={outfit.description} onCommit={description => onChange({ ...outfit, description })} placeholder="Description" />
-    </div>;
-    }
-    if (evidence.kind === "discordGuild") {
-        const guild = evidence as Extract<RaywardEvidence, { kind: "discordGuild"; }>;
-        return <div className={cl("lab-evidence")}>
-            <LabText value={guild.name ?? guild.safeName} onCommit={name => onChange({ ...guild, name, safeName: name })} placeholder="Server name" />
-            <LabText value={guild.types.join(", ")} onCommit={value => onChange({ ...guild, types: value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="Types, comma separated" />
-            <LabText value={String(guild.messages ?? 0)} onCommit={value => onChange({ ...guild, messages: Number(value) || 0 })} placeholder="Message count" />
-        </div>;
-    }
-    if (evidence.kind === "discordUser") {
-        const discordUser = evidence as Extract<RaywardEvidence, { kind: "discordUser"; }>;
-        return <LabText value={discordUser.discordId} onCommit={discordId => onChange({ ...discordUser, discordId })} placeholder="Discord ID" validate={value => /^\d{15,21}$/.test(value) ? undefined : "Enter a Discord ID"} />;
-    }
-    return <p className={cl("lab-hint")}>This evidence type is read-only. Edit it in the Session tab: {evidence.kind}</p>;
 }
