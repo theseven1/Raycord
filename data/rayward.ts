@@ -16,11 +16,15 @@ import type { DiscordAlt, RaywardMembership, RaywardProvider, RaywardResult, Sou
 const BATCH_LIMIT = 100;
 const ttlMs = () => clampTtl(settings.store.cacheTtlMinutes);
 
-export const hasApiKey = () => !!settings.store.raywardApiKey?.trim();
+export const hasApiKey = () => !!settings.store.raywardApiKey?.trim() && settings.store.keyStatus !== "invalid";
+
+export const missingKeyError = () => settings.store.keyStatus === "invalid" && settings.store.raywardApiKey?.trim()
+    ? makeError("auth", "Your Rayward API key was rejected")
+    : makeError("config", "Sign in with your Rayward API key");
 
 function authHeaders(): Record<string, string> {
     const key = settings.store.raywardApiKey?.trim();
-    if (!key) throw makeError("config", "Add a Rayward API key in the plugin settings");
+    if (!key || settings.store.keyStatus === "invalid") throw missingKeyError();
     return { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
 }
 

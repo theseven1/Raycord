@@ -17,10 +17,11 @@
 
 Rayward collects results from Roblox and Discord safety sources such as Rotector, TASE, RAB, Okappiki, ServerSweep, RCR and RoLock. Raycord checks people there and shows the answer in Discord.
 
-- A Rayward section in profiles and the DM sidebar, with an overview and report.
+- A Rayward section in profiles and the DM sidebar, and a Rayward tab in the full profile, with an overview and report.
 - Each source's status, reasons, evidence and links.
 - Markers next to flagged users in the member list and chat, plus a warning under their message.
-- A warning before your first message to a flagged user.
+- A warning before your first message to a flagged user, and before you add one as a friend.
+- Markers on the Friends page, including pending requests.
 - `/rayward`, `/rayward-roblox` and `/rayward-group` commands. Only you see the replies.
 - A test lab in the Vencord toolbox to try all of it on fake accounts.
 
@@ -30,22 +31,40 @@ Rayward collects results from Roblox and Discord safety sources such as Rotector
 
 ## Install
 
+The installer sets everything up: Git, Node.js and pnpm if they're missing, Vencord (or the copy you already have), Raycord, the build, and patching Discord. It also keeps Raycord and Vencord up to date once a day.
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://github.com/theseven1/Raycord/releases/latest/download/install.ps1 | iex
+```
+
+**Linux and macOS**:
+
+```sh
+curl -fsSL https://github.com/theseven1/Raycord/releases/latest/download/install.sh | bash
+```
+
+Run it again any time to repair or update. Options such as `--uninstall` or `--no-schedule` are in [docs/installation.md](docs/installation.md).
+
+### Manual install
+
 Vencord only loads custom plugins from a build you make yourself, so you'll need [Git](https://git-scm.com), [Node.js](https://nodejs.org) 22 or newer and [pnpm](https://pnpm.io).
 
 ```sh
 git clone https://github.com/Vendicated/Vencord.git
 cd Vencord
 pnpm install --frozen-lockfile
-git clone https://github.com/theseven1/Rayward-Vencord-User-Plugin.git src/userplugins/rayward
+git clone https://github.com/theseven1/Raycord.git src/userplugins/raycord
 pnpm build
 pnpm inject
 ```
 
 `pnpm inject` patches the Discord desktop app. For the browser extension, run `pnpm buildWeb` instead and load `dist/chromium-unpacked`. Vesktop users can point **Settings > Vencord location** at the `dist` folder.
 
-You can also download `rayward-vX.Y.Z.zip` from the [latest release](https://github.com/theseven1/Rayward-Vencord-User-Plugin/releases/latest), unzip it into `src/userplugins/` and build the same way.
+You can also download `rayward-vX.Y.Z.zip` from the [latest release](https://github.com/theseven1/Raycord/releases/latest), unzip it into `src/userplugins/` and build the same way.
 
-Once Discord restarts, open **Settings > Vencord > Plugins**, enable **Raycord** and paste your Rayward API key. You can apply for one at [rayward.app](https://rayward.app/signin).
+Once Discord restarts, open **Settings > Vencord > Plugins**, enable **Raycord** and sign in with your Rayward API key. You can apply for one at [rayward.app](https://rayward.app/signin).
 
 [docs/installation.md](docs/installation.md) covers updating, uninstalling and common problems.
 

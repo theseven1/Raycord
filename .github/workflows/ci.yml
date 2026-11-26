@@ -58,7 +58,7 @@ jobs:
       - name: Add plugin to Vencord
         run: |
           mkdir -p vencord/src/userplugins/rayward
-          rsync -a --exclude .git --exclude .github --exclude docs plugin/ vencord/src/userplugins/rayward/
+          rsync -a --exclude .git --exclude .github --exclude docs --exclude installer plugin/ vencord/src/userplugins/rayward/
 
       - name: Lint
         working-directory: vencord
@@ -79,3 +79,25 @@ jobs:
       - name: Test
         working-directory: vencord
         run: node --test src/userplugins/rayward/tests/*.test.mjs
+
+  installers:
+    name: Check installers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check install.sh
+        run: |
+          bash -n installer/install.sh
+          shellcheck -S warning installer/install.sh
+
+      - name: Check install.ps1
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/installer/install.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors | ForEach-Object { Write-Host $_.Message }; exit 1 }

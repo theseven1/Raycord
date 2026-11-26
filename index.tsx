@@ -19,13 +19,16 @@ import { ChannelStore, IconUtils, Menu, showToast, UserStore } from "@webpack/co
 import { RAYWARD_MARK_URL, RaywardMenuIcon, RaywardWordmark } from "./components/brand/Brand";
 import { ChatWarning, resetWarnings } from "./components/chat/ChatWarning";
 import { Indicator } from "./components/chat/Indicator";
+import { ProfileTab, RAYWARD_SECTION } from "./components/report/ProfileTab";
 import { openReportModal } from "./components/report/ReportModal";
 import { Section } from "./components/report/Section";
 import { openEasiModal } from "./components/settings/EasiModal";
+import { openSignInModal } from "./components/settings/SignInModal";
 import { verdictTooltip } from "./components/shared";
 import { openTestLab } from "./components/testlab/TestLab";
+import { recheckStoredKey } from "./data/auth";
 import { toRaywardError } from "./data/errors";
-import { clearDismissed, guardFirstContact, interceptDirectSends, loadDismissed, restoreDirectSends, shouldSkipUser } from "./data/guard";
+import { clearDismissed, guardFirstContact, interceptDirectSends, interceptRelationships, loadDismissed, restoreDirectSends, restoreRelationships, shouldSkipUser } from "./data/guard";
 import { clearAllCaches, loadAllCaches, resolveData, resolveVerdict } from "./data/hooks";
 import { loadLab, refreshLab } from "./data/mock";
 import { lookupNow } from "./data/rayward";
@@ -57,6 +60,7 @@ const reportMenuItem: NavContextMenuPatchCallback = (children, props: { user?: U
 
 const notified = new Set<string>();
 let stopWatchingLab: (() => void) | undefined;
+let promptTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function maybeNotify(user: User) {
     if (!settings.store.notifyOnFlaggedDm || shouldSkipUser(user) || notified.has(user.id)) return;
@@ -124,22 +128,57 @@ export default definePlugin({
                 replace: "$&$self.renderSection({userId:$1?.id}),",
             },
         },
+        {
+            find: ".WIDGETS?",
+            replacement: [
+                {
+                    match: /function \i\((\i)\)\{(?=let\{user:\i,currentUser:\i,displayProfile:\i,guildId:\i,channelId:\i,items:\i,initialSection:)/,
+                    replace: "$&$1=$self.withRaywardTab($1);",
+                },
+                {
+                    match: /\(0,\i\.jsx\)\(\i,\{user:(\i),currentUser:\i,displayProfile:\i,guildId:\i,channelId:\i,section:(\i)\.section,onClose:\i\}\)/,
+                    replace: "$2.section==='RAYWARD'?$self.renderProfileTab({user:$1}):$&",
+                },
+                {
+                    match: /type:"top",(?!className:)/,
+                    replace: '$&className:"vc-rw-profile-tab-bar",',
+                },
+            ],
+        },
+        {
+            find: "SIZE_32),onlyAnimateOnHoverOrFocus:!0",
+            replacement: {
+                match: /(\(0,\i\.jsx\)\(\i\.\i,\{user:(\i),nick:\i,botClass:.{0,250}?showGuildTag:!0\}\))/,
+                replace: "$self.renderFriendName({user:$2,children:$1})",
+            },
+        },
     ],
 
     async start() {
         await Promise.all([loadAllCaches(), loadDismissed()]);
         interceptDirectSends();
+        interceptRelationships();
         stopWatchingLab = watchEdits();
         if (await loadLab()) materialize();
 
         for (const key of PREVIOUS_STORAGE_KEYS) DataStore.del(key).catch(() => { });
+
+        if (settings.store.raywardApiKey?.trim()) void recheckStoredKey();
+        else if (!settings.store.signInPrompted) {
+            promptTimer = setTimeout(() => {
+                settings.store.signInPrompted = true;
+                openSignInModal();
+            }, 5000);
+        }
     },
 
     stop() {
+        clearTimeout(promptTimer);
         stopWatchingLab?.();
         stopWatchingLab = undefined;
         unloadSession();
         restoreDirectSends();
+        restoreRelationships();
         notified.clear();
         resetWarnings();
     },
@@ -227,6 +266,9 @@ export default definePlugin({
     ],
 
     toolboxActions: {
+        "Rayward: Sign in"() {
+            openSignInModal();
+        },
         "Rayward: Check yourself"() {
             openReportModal(UserStore.getCurrentUser().id);
         },
@@ -252,6 +294,30 @@ export default definePlugin({
         if (!userId || !settings.store.showInProfile) return null;
         if (settings.store.ignoreBots && UserStore.getUser(userId)?.bot) return null;
         return <Section userId={userId} />;
+    }, { noop: true }),
+
+    withRaywardTab(props: { user?: User; items?: { section: string; text: string; }[]; }) {
+        try {
+            const { user, items } = props ?? {};
+            if (!user || !Array.isArray(items) || !settings.store.showInProfile) return props;
+            if (settings.store.ignoreBots && user.bot) return props;
+            if (items.some(i => i.section === RAYWARD_SECTION)) return props;
+            return { ...props, items: [...items, { section: RAYWARD_SECTION, text: "Rayward" }] };
+        } catch {
+            return props;
+        }
+    },
+
+    renderProfileTab: ErrorBoundary.wrap(({ user }: { user: User; }) => <ProfileTab user={user} />),
+
+    renderFriendName: ErrorBoundary.wrap(({ user, children }: { user: User; children: React.ReactNode; }) => {
+        if (!settings.store.friendsPageMarkers || shouldSkipUser(user)) return <>{children}</>;
+        return (
+            <div className={cl("friend-name")}>
+                {children}
+                <Indicator user={user} />
+            </div>
+        );
     }, { noop: true }),
 
     renderMemberListDecorator: ({ user }) => {

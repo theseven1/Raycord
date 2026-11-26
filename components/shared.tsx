@@ -4,20 +4,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { plugins } from "@api/PluginManager";
-import { openPluginModal } from "@components/settings";
 import { TooltipContainer } from "@components/TooltipContainer";
 import { classes } from "@utils/misc";
+import { useLayoutEffect, useRef, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { describeError, type RaywardError } from "../data/errors";
 import type { FailedSource, Verdict } from "../data/types";
 import { verdictReasons, verdictSources } from "../data/verdict";
-import { PLUGIN_NAME } from "../lib/constants";
 import { cl, listAnd, plural, Severity, severityName, severityPhrase } from "../lib/utils";
 import { RaywardMark, SourceLogoById } from "./brand/Brand";
 import { RetryIcon } from "./brand/icons";
 import { StatusIcon, StatusLabel, TONE_LABEL } from "./brand/StatusIcon";
+import { openSignInModal } from "./settings/SignInModal";
 
 export type TabId = "overview" | "sources" | "roblox";
 
@@ -28,10 +27,26 @@ export interface TabSpec<T extends string = TabId> {
 }
 
 export function Tabs<T extends string = TabId>({ tabs, active, onSelect }: { tabs: TabSpec<T>[]; active: T; onSelect(id: T): void; }) {
-    const index = Math.max(0, tabs.findIndex(t => t.id === active));
+    const ref = useRef<HTMLDivElement>(null);
+    const [pill, setPill] = useState<{ x: number; w: number; }>();
+    const layout = tabs.map(t => `${t.id}${t.label}${t.badge ?? ""}`).join("|");
+
+    useLayoutEffect(() => {
+        const list = ref.current;
+        if (!list) return;
+        const measure = () => {
+            const tab = list.querySelector<HTMLElement>('[aria-selected="true"]');
+            if (tab) setPill(p => p?.x === tab.offsetLeft && p.w === tab.offsetWidth ? p : { x: tab.offsetLeft, w: tab.offsetWidth });
+        };
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(list);
+        return () => observer.disconnect();
+    }, [active, layout]);
+
     return (
-        <div className={cl("tabs")} role="tablist" style={{ "--n": tabs.length, "--i": index } as React.CSSProperties}>
-            <span className={cl("tab-pill")} aria-hidden />
+        <div ref={ref} className={cl("tabs")} role="tablist" style={pill && { "--x": `${pill.x}px`, "--w": `${pill.w}px` } as React.CSSProperties}>
+            {pill && <span className={cl("tab-pill")} aria-hidden />}
             {tabs.map(tab => (
                 <button
                     key={tab.id}
@@ -131,13 +146,8 @@ export function LoadingBlock({ label = "Checking sources" }: { label?: string; }
     );
 }
 
-const openSettings = () => {
-    const plugin = plugins[PLUGIN_NAME];
-    if (plugin) openPluginModal(plugin);
-};
-
 const BLOCKING_COPY: Partial<Record<RaywardError["kind"], { title: string; body: string; }>> = {
-    config: { title: "Add your Rayward API key", body: "You need one to check accounts." },
+    config: { title: "Sign in to Rayward", body: "Raycord needs your Rayward API key." },
     auth: { title: "Your Rayward API key was rejected", body: "Make sure it's valid and active." },
     quota: { title: "Daily quota reached", body: "You've reached today's lookup quota." },
 };
@@ -153,8 +163,8 @@ export function BlockingState({ error, onRetry }: { error: RaywardError; onRetry
                 <strong>{copy.title}</strong>
                 <span>{copy.body}</span>
             </div>
-            <button className={cl("button")} onClick={fixable ? openSettings : onRetry}>
-                {fixable ? "Open settings" : "Retry"}
+            <button className={cl("button")} onClick={fixable ? openSignInModal : onRetry}>
+                {fixable ? "Sign in" : "Retry"}
             </button>
         </div>
     );

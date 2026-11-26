@@ -5,11 +5,11 @@
  */
 
 import { findByCodeLazy } from "@webpack";
-import { ChannelStore, FluxDispatcher, IconUtils, MessageActions, NavigationRouter, RestAPI, SelectedChannelStore, StickersStore, UserStore } from "@webpack/common";
+import { ChannelStore, FluxDispatcher, IconUtils, MessageActions, NavigationRouter, RelationshipStore, RestAPI, SelectedChannelStore, StickersStore, UserStore } from "@webpack/common";
 
 import { resetWarnings } from "../components/chat/ChatWarning";
-import { guardFirstContact, resetChannelApproval } from "../data/guard";
-import { accountForChannel, emptyState, findAccount, isLabActive, isMockChannel, isMockDiscord, labState, type MockAccount, type MockMessage, mockSnowflake, newAccount, setLab, subscribeLab, unloadLab, updateLab } from "../data/mock";
+import { guardFirstContact, guardFriend, RelationshipActions, resetChannelApproval, userFromTag } from "../data/guard";
+import { accountForChannel, emptyState, findAccount, isLabActive, isMockChannel, isMockDiscord, labState, type MockAccount, type MockMessage, type MockRelationship, mockSnowflake, newAccount, setLab, subscribeLab, unloadLab, updateLab } from "../data/mock";
 import { applyPreset, type PresetId } from "../data/mockPresets";
 import { getProviders, peekProviders } from "../data/providers";
 import { logger } from "./utils";
@@ -120,8 +120,37 @@ export function syncAccount(accountId: string) {
 
     const channelId = channelOf(account.id);
     if (channelId && !ChannelStore.getChannel(channelId)) FluxDispatcher.dispatch({ type: "CHANNEL_CREATE", channel: createChannelRecord(rawChannel(account, channelId)) });
+    syncRelationship(account);
     applyAvatar(account);
 }
+
+const RELATIONSHIP_TYPES: Record<Exclude<MockRelationship, "none">, number> = { friend: 1, incoming: 3, outgoing: 4 };
+
+function syncRelationship(account: MockAccount) {
+    const current = RelationshipStore.getRelationshipType(account.id);
+    const wanted = account.relationship === "none" ? 0 : RELATIONSHIP_TYPES[account.relationship];
+    if (current === wanted) return;
+    if (current) FluxDispatcher.dispatch({ type: "RELATIONSHIP_REMOVE", relationship: { id: account.id, type: current } });
+    if (wanted) {
+        FluxDispatcher.dispatch({
+            type: "RELATIONSHIP_ADD",
+            relationship: { id: account.id, type: wanted, user: rawUser(account), since: new Date().toISOString(), nickname: null },
+            shouldNotify: false,
+        });
+    }
+}
+
+function removeRelationships(accounts: MockAccount[]) {
+    for (const account of accounts) {
+        const type = RelationshipStore.getRelationshipType(account.id);
+        if (type) FluxDispatcher.dispatch({ type: "RELATIONSHIP_REMOVE", relationship: { id: account.id, type } });
+    }
+}
+
+const setRelationship = (accountId: string, relationship: MockRelationship) => updateLab(draft => {
+    const account = draft.accounts.find(a => a.id === accountId);
+    if (account) account.relationship = relationship;
+});
 
 function loadMessages(channelId: string) {
     const account = accountForChannel(channelId);
@@ -229,6 +258,29 @@ function installWrappers() {
         addLocalMessage(channelId, UserStore.getCurrentUser().id, "", [WAVE_STICKER_ID]);
     });
 
+    wrap(RelationshipActions, "addRelationship", original => async function (this: unknown, options: { userId?: string; type?: number; } | undefined, ...rest: unknown[]) {
+        const account = options?.userId ? findAccount(options.userId) : undefined;
+        if (!account) return original.call(this, options, ...rest);
+        if (options?.type === 2) return setRelationship(account.id, "none");
+        if (!await guardFriend(account.id)) return;
+        await setRelationship(account.id, account.relationship === "incoming" ? "friend" : "outgoing");
+    });
+
+    wrap(RelationshipActions, "removeRelationship", original => function (this: unknown, userId: string, ...rest: unknown[]) {
+        if (!findAccount(userId)) return original.call(this, userId, ...rest);
+        return setRelationship(userId, "none");
+    });
+
+    wrap(RelationshipActions, "sendRequest", original => async function (this: unknown, options: { discordTag?: string; } | undefined, ...rest: unknown[]) {
+        const name = options?.discordTag?.split("#")[0]?.toLowerCase();
+        const user = userFromTag(options?.discordTag);
+        const account = labState()?.accounts.find(a => a.username.toLowerCase() === name) ?? (user ? findAccount(user.id) : undefined);
+        if (!account) return original.call(this, options, ...rest);
+        if (!await guardFriend(account.id)) return;
+        await setRelationship(account.id, account.relationship === "incoming" ? "friend" : "outgoing");
+        return { ok: true, status: 204, body: null };
+    });
+
     wrap(IconUtils as unknown as Record<string, unknown>, "getUserAvatarURL", original => function (this: unknown, user: { id?: string; }, ...rest: unknown[]) {
         const account = user?.id ? findAccount(user.id) : undefined;
         return account ? avatarUrlOf(account) : original.call(this, user, ...rest);
@@ -325,6 +377,7 @@ export async function removeAccount(accountId: string) {
 
     const channelId = state.channels[accountId];
     if (channelId) deleteChannels([channelId]);
+    removeRelationships(state.accounts.filter(a => a.id === accountId));
     await updateLab(draft => {
         draft.accounts = draft.accounts.filter(a => a.id !== accountId);
         for (const a of draft.accounts) a.otherDiscord = a.otherDiscord.filter(o => o.id !== accountId);
@@ -367,6 +420,7 @@ export async function clearMessages(accountId: string) {
 export async function stopSession() {
     const state = labState();
     deleteChannels(Object.values(state?.channels ?? {}));
+    removeRelationships(state?.accounts ?? []);
     unwrapAll();
     unsubscribeFlux();
     await setLab(null);
@@ -374,7 +428,10 @@ export async function stopSession() {
 
 export function unloadSession() {
     const state = labState();
-    if (state) deleteChannels(Object.values(state.channels));
+    if (state) {
+        deleteChannels(Object.values(state.channels));
+        removeRelationships(state.accounts);
+    }
     unwrapAll();
     unsubscribeFlux();
     unloadLab();

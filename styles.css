@@ -271,6 +271,24 @@
     margin-bottom: 12px;
 }
 
+.vc-rw-profile-tab-bar {
+    --space-xl: 16px;
+
+    flex-wrap: wrap;
+    row-gap: 6px;
+}
+
+.vc-rw-profile-tab {
+    box-sizing: border-box;
+    align-self: stretch;
+    width: 100%;
+    min-height: 0;
+    padding: 4px 6px 16px 2px;
+    overflow: hidden auto;
+    scrollbar-color: var(--vc-rw-border) transparent;
+    scrollbar-width: thin;
+}
+
 .vc-rw-modal-id {
     flex: 1;
     min-width: 0;
@@ -316,9 +334,7 @@
 
 .vc-rw-tabs {
     position: relative;
-    display: grid;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
+    display: flex;
     margin-bottom: 10px;
     padding: 3px;
     border-radius: 8px;
@@ -329,28 +345,30 @@
     position: absolute;
     top: 3px;
     bottom: 3px;
-    left: 3px;
-    width: calc((100% - 6px) / var(--n, 3));
+    left: 0;
+    width: var(--w);
     border-radius: 6px;
     background: var(--vc-rw-surface-strong);
-    transform: translateX(calc(100% * var(--i, 0)));
-    transition: transform 240ms var(--vc-rw-ease);
+    transform: translateX(var(--x));
+    transition: transform 240ms var(--vc-rw-ease), width 240ms var(--vc-rw-ease);
 }
 
 .vc-rw-tab {
     position: relative;
     display: flex;
+    flex: 1 1 auto;
     align-items: center;
     justify-content: center;
     gap: 5px;
     min-width: 0;
-    padding: 5px 6px;
+    padding: 5px 8px;
     border: 0;
     border-radius: 6px;
     background: none;
     color: var(--vc-rw-muted);
     font-size: 12px;
     font-weight: 600;
+    white-space: nowrap;
     cursor: pointer;
     transition: color 160ms ease;
 }
@@ -1327,6 +1345,37 @@
     white-space: pre-wrap;
 }
 
+.vc-rw-friend-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.vc-rw-friend-name > :first-child {
+    display: contents;
+}
+
+.vc-rw-friend-name > :first-child > :not(:first-child) {
+    order: 2;
+}
+
+.vc-rw-friend-name > .vc-rw-probe {
+    display: flex;
+    order: 1;
+}
+
+.vc-rw-sign-in,
+.vc-rw-account {
+    display: grid;
+    gap: 8px;
+}
+
+.vc-rw-sign-in {
+    gap: 12px;
+    padding-bottom: 8px;
+}
+
 .vc-rw-easi-modal {
     display: grid;
     gap: 10px;
@@ -1339,6 +1388,19 @@
 
     .vc-rw-lab-source-row {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+}
+
+@container (max-width: 300px) {
+    .vc-rw-tab {
+        gap: 4px;
+        padding: 5px 4px;
+        font-size: 11px;
+    }
+
+    .vc-rw-tab-badge {
+        min-width: 14px;
+        padding: 0 3px;
     }
 }
 
