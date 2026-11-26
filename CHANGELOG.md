@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/theseven1/Raycord/compare/v1.0.0...v1.1.0) (2026-11-26)
+
+
+### Features
+
+* rename to Raycord and add a test lab ([#4](https://github.com/theseven1/Raycord/issues/4)) ([91a3630](https://github.com/theseven1/Raycord/commit/91a36305a176b5d8ca6b012fa0123a6658cd2b0a))
+
 ## 1.0.0 (2026-11-24)
 
 First public release.
