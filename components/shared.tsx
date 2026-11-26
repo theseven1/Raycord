@@ -21,13 +21,13 @@ import { StatusIcon, StatusLabel, TONE_LABEL } from "./brand/StatusIcon";
 
 export type TabId = "overview" | "sources" | "roblox";
 
-export interface TabSpec {
-    id: TabId;
+export interface TabSpec<T extends string = TabId> {
+    id: T;
     label: string;
     badge?: number;
 }
 
-export function Tabs({ tabs, active, onSelect }: { tabs: TabSpec[]; active: TabId; onSelect(id: TabId): void; }) {
+export function Tabs<T extends string = TabId>({ tabs, active, onSelect }: { tabs: TabSpec<T>[]; active: T; onSelect(id: T): void; }) {
     const index = Math.max(0, tabs.findIndex(t => t.id === active));
     return (
         <div className={cl("tabs")} role="tablist" style={{ "--n": tabs.length, "--i": index } as React.CSSProperties}>
@@ -119,7 +119,7 @@ export function Skeleton({ width }: { width: string; }) {
     return <div className={cl("skeleton")} style={{ width }} />;
 }
 
-export function LoadingBlock({ label = "Checking Rayward sources" }: { label?: string; }) {
+export function LoadingBlock({ label = "Checking sources.." }: { label?: string; }) {
     return (
         <div className={cl("loading")} aria-busy role="status" aria-label={label}>
             <Skeleton width="55%" />
@@ -136,8 +136,8 @@ const openSettings = () => {
 
 const BLOCKING_COPY: Partial<Record<RaywardError["kind"], { title: string; body: string; }>> = {
     config: { title: "Add your Rayward API key", body: "Lookups need a key from your approved Rayward account." },
-    auth: { title: "Your Rayward API key was rejected", body: "Check that the key is current and your access is approved." },
-    quota: { title: "Daily lookup quota reached", body: "Rayward resets the quota daily. Cached results still show." },
+    auth: { title: "Your Rayward API key was rejected", body: "Check that the key is valid and your access is approved." },
+    quota: { title: "Daily lookup quota reached", body: "Rayward resets the quota daily." },
 };
 
 export function BlockingState({ error, onRetry }: { error: RaywardError; onRetry(): void; }) {

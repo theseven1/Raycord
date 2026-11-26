@@ -21,19 +21,23 @@ import { ChatWarning, resetWarnings } from "./components/chat/ChatWarning";
 import { Indicator } from "./components/chat/Indicator";
 import { openReportModal } from "./components/report/ReportModal";
 import { Section } from "./components/report/Section";
+import { openEasiModal } from "./components/settings/EasiModal";
 import { verdictTooltip } from "./components/shared";
+import { openTestLab } from "./components/testlab/TestLab";
 import { toRaywardError } from "./data/errors";
 import { clearDismissed, guardFirstContact, interceptDirectSends, loadDismissed, restoreDirectSends, shouldSkipUser } from "./data/guard";
 import { clearAllCaches, loadAllCaches, resolveData, resolveVerdict } from "./data/hooks";
+import { loadLab, refreshLab } from "./data/mock";
 import { lookupNow } from "./data/rayward";
 import { robloxAvatarStore } from "./data/roblox";
-import { DM_CHANNEL_TYPES, LEGACY_PLUGIN_NAME, LEGACY_STORAGE_KEYS, PLUGIN_NAME, RAYWARD_SITE } from "./lib/constants";
+import { DM_CHANNEL_TYPES, PLUGIN_NAME, PREVIOUS_PLUGIN_NAME, PREVIOUS_STORAGE_KEYS, RAYWARD_SITE } from "./lib/constants";
 import { lookupEmbed, noticeEmbed, sendEmbed, userEmbed } from "./lib/embeds";
+import { materialize, unloadSession, watchEdits } from "./lib/testSession";
 import { cl } from "./lib/utils";
-import { migrateLegacySettings, settings } from "./settings";
+import { settings } from "./settings";
 import managedStyle from "./styles.css?managed";
 
-migratePluginSettings(PLUGIN_NAME, LEGACY_PLUGIN_NAME);
+migratePluginSettings(PLUGIN_NAME, PREVIOUS_PLUGIN_NAME);
 
 const reportMenuItem: NavContextMenuPatchCallback = (children, props: { user?: User; }) => {
     const userId = props?.user?.id;
@@ -52,6 +56,7 @@ const reportMenuItem: NavContextMenuPatchCallback = (children, props: { user?: U
 };
 
 const notified = new Set<string>();
+let stopWatchingLab: (() => void) | undefined;
 
 async function maybeNotify(user: User) {
     if (!settings.store.notifyOnFlaggedDm || shouldSkipUser(user) || notified.has(user.id)) return;
@@ -72,11 +77,11 @@ const dmRecipients = (channel: Channel | undefined) =>
     channel && DM_CHANNEL_TYPES.has(channel.type) ? channel.recipients ?? [] : [];
 
 export default definePlugin({
-    name: "Rayward",
-    description: "Rayward for Discord: safety flags from Rayward sources in profiles, chat and the member list.",
+    name: "Raycord",
+    description: "Shows safety flags from Rayward's sources in profiles, chat and the member list.",
     authors: [{ name: "MkSeven1", id: 1356781561277579465n }],
     tags: ["Privacy", "Utility", "Servers"],
-    searchTerms: ["rayward", "catchthem", "rotector", "tase", "rab", "okappiki", "serversweep", "rolock", "rcr", "easi", "roblox", "safety"],
+    searchTerms: ["raycord", "rayward", "rotector", "tase", "rab", "okappiki", "serversweep", "rolock", "rcr", "roblox", "safety"],
 
     settings,
     managedStyle,
@@ -94,7 +99,7 @@ export default definePlugin({
         <div className={cl("scope", "about")}>
             <RaywardWordmark height={22} />
             <Paragraph>
-                Checks Discord users against sources on <Link href={RAYWARD_SITE}>Rayward</Link>.
+                Raycord checks Discord users against the safety sources on <Link href={RAYWARD_SITE}>Rayward</Link>.
             </Paragraph>
             <Paragraph>
                 You need your own Rayward API key, entered below.
@@ -122,14 +127,18 @@ export default definePlugin({
     ],
 
     async start() {
-        migrateLegacySettings();
         await Promise.all([loadAllCaches(), loadDismissed()]);
         interceptDirectSends();
+        stopWatchingLab = watchEdits();
+        if (await loadLab()) materialize();
 
-        for (const key of LEGACY_STORAGE_KEYS) DataStore.del(key).catch(() => { });
+        for (const key of PREVIOUS_STORAGE_KEYS) DataStore.del(key).catch(() => { });
     },
 
     stop() {
+        stopWatchingLab?.();
+        stopWatchingLab = undefined;
+        unloadSession();
         restoreDirectSends();
         notified.clear();
         resetWarnings();
@@ -223,12 +232,19 @@ export default definePlugin({
         },
         async "Rayward: Clear cache"() {
             await clearAllCaches();
+            refreshLab();
             resetWarnings();
             showToast({ text: "Rayward cache cleared", variant: "success" });
         },
         async "Rayward: Reset send warnings"() {
             await clearDismissed();
             showToast({ text: "Send warnings are back on for everyone", variant: "success" });
+        },
+        "Rayward: Test lab"() {
+            openTestLab();
+        },
+        "Rayward: EASI"() {
+            openEasiModal();
         },
     },
 

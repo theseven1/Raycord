@@ -40,7 +40,7 @@ The folder name under `src/userplugins/` doesn't matter to Vencord, but the rest
 ## Turning it on
 
 1. Restart Discord.
-2. Open **Settings > Vencord > Plugins** and enable **Rayward**.
+2. Open **Settings > Vencord > Plugins** and enable **Raycord**.
 3. Open its settings and paste your API key.
 4. Pick the sources you want. The list loads from Rayward, so new sources show up without a plugin update.
 
@@ -59,9 +59,9 @@ pnpm build
 
 From a release, replace the `rayward` folder with the new zip's contents and build again. Restart Discord after either.
 
-## Coming from CatchThem
+## Coming from Rayward
 
-Rayward replaces CatchThem. Remove the old `catchthem` folder from `src/userplugins/` before building, since two copies of the plugin can't load at once. Your settings, including the API key, and your "don't warn me again" choices move over on first start. Old cached results are cleared.
+The plugin was renamed to Raycord. Your settings, API key and "don't warn me again" choices carry over automatically on first start.
 
 ## Uninstalling
 

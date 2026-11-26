@@ -21,6 +21,8 @@ pnpm inject
 
 `pnpm watch` rebuilds on save. Reload Discord with Ctrl+R to pick up changes. [docs/development.md](docs/development.md) has more on debugging and testing against a live client.
 
+For manual feature checks, start the test lab from the Vencord toolbox and try its presets and editors with fake accounts.
+
 ## Checks
 
 Run these from the Vencord root before opening a pull request. CI runs the same steps against the latest Vencord.

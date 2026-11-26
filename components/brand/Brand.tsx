@@ -7,6 +7,7 @@
 import { classes } from "@utils/misc";
 import { useState } from "@webpack/common";
 import easiIcon from "file://../../assets/easi.png?base64";
+import raycordIcon from "file://../../assets/raycord-icon.png?base64";
 import mark32 from "file://../../assets/rayward/32.png?base64";
 import mark48 from "file://../../assets/rayward/48.png?base64";
 import mark96 from "file://../../assets/rayward/96.png?base64";
@@ -29,6 +30,10 @@ const ROBLOX_MASK = `url("${png(robloxIcon)}")`;
 export function RaywardMark({ size = 16, className }: { size?: number; className?: string; }) {
     const src = png(size <= 16 ? mark32 : size <= 24 ? mark48 : mark96);
     return <img className={classes(cl("mark"), className)} src={src} width={size} height={size} alt="" aria-hidden draggable={false} />;
+}
+
+export function RaycordIcon({ size = 16, className }: { size?: number; className?: string; }) {
+    return <img className={classes(cl("mark"), className)} src={png(raycordIcon)} width={size} height={size} alt="" aria-hidden draggable={false} />;
 }
 
 export const RaywardMenuIcon = ({ className }: { className?: string; }) => <RaywardMark size={18} className={className} />;

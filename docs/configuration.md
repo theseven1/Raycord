@@ -9,8 +9,6 @@ Settings live under **Settings > Vencord > Plugins > Rayward**. Changes apply ri
 | Rayward API key | empty | Your key from rayward.app. Nothing is looked up without it. Changing it clears cached results. |
 | Sources | Rayward's defaults | One switch per source Rayward offers. Sources added later follow Rayward's default until you change them. |
 | Display linked Roblox accounts | on | Loads avatars and names for linked Roblox accounts in full reports. |
-| Check linked Roblox accounts with EASI | off | Adds EASI results for linked Roblox accounts. Needs an EASI secret. |
-| EASI secret | empty | Sent only to the EASI proxy service. |
 
 ## Profiles
 
@@ -52,8 +50,8 @@ Every result is shown in reports, but only results a source marks as actionable 
 | Level | Comes from |
 |---|---|
 | Severe | A source's most serious actionable status |
-| High | Other actionable statuses, or an EASI flag for ERP |
-| Moderate | Other EASI flags |
+| High | Other actionable statuses, or an optional integration flag for ERP |
+| Moderate | Other optional integration flags |
 
 ## Cache
 
@@ -67,4 +65,4 @@ The slider sets how long results are kept. (default 24 hours). Failed lookups ar
 | `/rayward-roblox <id>` | Results for a Roblox user ID. |
 | `/rayward-group <id>` | Results for a Roblox group ID. |
 | Right-click a user > Rayward report | Opens the full report. |
-| Vencord toolbox | Check yourself, Clear cache, Reset send warnings. |
+| Vencord toolbox | Check yourself, Clear cache, Reset send warnings, Test lab. |

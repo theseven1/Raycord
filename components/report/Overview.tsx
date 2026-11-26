@@ -43,7 +43,7 @@ function headline(report: RaywardReport, rows: Row[]): string {
         return tone === "pending" ? `Under review by ${names}` : `${TONE_LABEL[tone]} result from ${names}`;
     }
     if (!rows.length && verdict.failed.length) return "Couldn't complete the check";
-    return verdict.failed.length ? "Not flagged by the sources that answered" : "Not flagged by the sources checked";
+    return verdict.failed.length ? "Not flagged" : "Not flagged";
 }
 
 function LinkRow({ icon, label, value, tone, onClick }: { icon?: ReactNode; label: string; value: string; tone?: Tone; onClick(): void; }) {

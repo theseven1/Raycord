@@ -46,17 +46,6 @@ export const settings = definePluginSettings({
         description: "Display linked Roblox accounts in full reports",
         default: true,
     },
-    enableEasiNotes: {
-        type: OptionType.BOOLEAN,
-        description: "Check linked Roblox accounts with EASI.",
-        default: false,
-    },
-    easiSecret: {
-        type: OptionType.STRING,
-        description: "EASI secret",
-        default: "",
-        placeholder: "Optional",
-    },
 
     showInProfile: {
         type: OptionType.BOOLEAN,
@@ -146,26 +135,4 @@ export const settings = definePluginSettings({
     warnThreshold: { disabled() { return !this.store.warnInChat && !this.store.notifyOnFlaggedDm; } },
     defaultTab: { disabled() { return !this.store.showInProfile; } },
     defaultExpanded: { disabled() { return !this.store.showInProfile; } },
-    easiSecret: { disabled() { return !this.store.enableEasiNotes; } },
-}).withPrivateSettings<{ sectionExpanded?: boolean; migratedV2?: boolean; }>();
-
-export function migrateLegacySettings() {
-    const store = settings.store as typeof settings.store & Record<string, unknown>;
-    if (store.migratedV2) return;
-
-    const legacyToggles: Record<string, string> = {
-        enableRotector: "rotector",
-        enableTase: "tase",
-        enableRab: "rab",
-        enableOkappiki: "okappiki",
-        enableServerSweep: "serversweep",
-    };
-    const overrides = { ...store.sourceOverrides };
-    for (const [key, id] of Object.entries(legacyToggles)) {
-        if (typeof store[key] === "boolean" && store[key] === false) overrides[id] = false;
-        delete store[key];
-    }
-    store.sourceOverrides = overrides;
-    if ((store.indicatorStyle as string) === "emoji") store.indicatorStyle = "icon";
-    store.migratedV2 = true;
-}
+}).withPrivateSettings<{ sectionExpanded?: boolean; easiEnabled?: boolean; easiSecret?: string; }>();

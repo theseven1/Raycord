@@ -22,7 +22,7 @@ export function SourceToggles() {
             <h3 className={cl("settings-heading")}>Sources</h3>
             {!providers && (
                 <p className={cl("muted")}>
-                    {error ? `Couldn't load the source list (${describeError(error)}). It loads again when you reopen settings.` : "Loading the source list from Rayward"}
+                    {error ? `Couldn't load the source list (${describeError(error)}).` : "Loading the source list.."}
                 </p>
             )}
             {providers?.map(provider => (

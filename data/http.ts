@@ -11,7 +11,7 @@ import { type FetchOptions, type FetchResult, performFetch } from "../lib/transp
 import { logger } from "../lib/utils";
 import { errorFromResponse, makeError, type RaywardError } from "./errors";
 
-const Native = VencordNative?.pluginHelpers?.Rayward as PluginNative<typeof import("../native")> | undefined;
+const Native = VencordNative?.pluginHelpers?.Raycord as PluginNative<typeof import("../native")> | undefined;
 
 const RETRYABLE_STATUS = new Set([500, 502, 503, 504]);
 

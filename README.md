@@ -43,7 +43,7 @@ pnpm inject
 
 You can also download `rayward-vX.Y.Z.zip` from the [latest release](https://github.com/theseven1/Rayward-Vencord-User-Plugin/releases/latest), unzip it into `src/userplugins/` and build the same way.
 
-Once Discord restarts, open **Settings > Vencord > Plugins**, enable **Rayward** and paste your Rayward API key. You can apply for one at [rayward.app](https://rayward.app/signin).
+Once Discord restarts, open **Settings > Vencord > Plugins**, enable **Raycord** and paste your Rayward API key. You can apply for one at [rayward.app](https://rayward.app/signin).
 
 [docs/installation.md](docs/installation.md) covers updating, uninstalling and common problems.
 

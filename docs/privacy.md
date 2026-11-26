@@ -9,8 +9,9 @@ The plugin runs entirely in your Discord client and has no server of its own. Th
 | `roscoe.rayward.app` | Discord user IDs and linked Roblox IDs, with your API key | Whenever someone is looked up (see below) |
 | `roscoe.rayward.app` | Nothing identifying | Loading the source list and source logos |
 | `users.roblox.com`, `thumbnails.roblox.com`, `tr.rbxcdn.com` | Roblox IDs | Full reports and `/rayward-roblox`, when "Display linked Roblox accounts" is on |
-| `catchthem.mk-7.org` | Linked Roblox IDs, with your CatchThem secret | Full reports, only when EASI is on and a secret is set |
 | `rayward.app` | Nothing identifying | The icon in command replies |
+
+An optional integration is off by default and enabled only from the Vencord toolbox with a secret. When enabled, it sends the IDs of linked Roblox accounts to its own service. The test lab is client-side only and sends nothing.
 
 ## When someone is looked up
 
@@ -24,7 +25,7 @@ Background checks skip bots when "Skip bots" is on, and they never include your 
 
 ## What's stored locally
 
-Results are cached in Vencord's local storage (IndexedDB) for the time you choose, at most seven days, and then deleted. Failed lookups aren't stored. Your API key and EASI secret are kept in Vencord's settings like any other plugin setting, so treat your settings exports as sensitive.
+Results are cached in Vencord's local storage (IndexedDB) for the time you choose, at most seven days, and then deleted. Failed lookups aren't stored. Your API key and optional integration secret are kept in Vencord's private plugin settings, so treat your settings exports as sensitive.
 
 Clearing the cache from settings or the toolbox removes every stored result immediately.
 

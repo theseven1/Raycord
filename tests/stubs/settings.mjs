@@ -9,7 +9,7 @@ export const settings = {
         raywardApiKey: "rwd_test",
         sourceOverrides: {},
         cacheTtlMinutes: 1440,
-        enableEasiNotes: false,
+        easiEnabled: false,
         easiSecret: "",
     },
 };
