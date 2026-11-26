@@ -10,7 +10,7 @@ import { settings } from "../settings";
 import { makeError, toRaywardError } from "./errors";
 import { failureOf, fetchWithRetry, isOk, parseBody } from "./http";
 import { getProviders, peekProviders } from "./providers";
-import { createSourceStore, type Settled, type SourceStore } from "./store";
+import { createSourceStore, intercept, type Settled, type SourceStore } from "./store";
 import type { DiscordAlt, RaywardMembership, RaywardProvider, RaywardResult, SourceOutcome, Subject, SubjectLookup } from "./types";
 
 const BATCH_LIMIT = 100;
@@ -96,18 +96,26 @@ async function lookupProvider(provider: RaywardProvider, subject: Subject, ids: 
 }
 
 async function fetchSubject(subject: Subject, keys: string[]): Promise<Map<string, Settled<RaywardResult>>> {
+    const out = new Map<string, Settled<RaywardResult>>();
+    const remote: string[] = [];
+    for (const key of keys) {
+        const mocked = intercept(`lookup_${subject}`, key);
+        if (mocked === undefined) remote.push(key);
+        else out.set(key, mocked === "pending" ? { ok: true, value: null } : mocked as Settled<RaywardResult>);
+    }
+    if (!remote.length) return out;
+
     authHeaders();
     const providers = await getProviders();
 
     const byProvider = new Map<string, string[]>();
-    for (const key of keys) {
+    for (const key of remote) {
         const [providerId, id] = splitKey(key);
         const ids = byProvider.get(providerId);
         if (ids) ids.push(id);
         else byProvider.set(providerId, [id]);
     }
 
-    const out = new Map<string, Settled<RaywardResult>>();
     await Promise.all([...byProvider].map(async ([providerId, ids]) => {
         const provider = providers.find(p => p.id === providerId);
         if (!provider) {

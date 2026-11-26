@@ -46,5 +46,5 @@ export function EasiCard({ flags, index, showAccount = true }: { flags: EasiFlag
 }
 
 export function EasiRejectedNotice() {
-    return <div className={cl("notice")}>EASI rejected your secret, so its results aren't shown. Check it in the plugin settings.</div>;
+    return <div className={cl("notice")}>EASI rejected your secret.</div>;
 }

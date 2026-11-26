@@ -30,7 +30,7 @@ function ReportModal({ modalProps, userId }: { modalProps: RenderModalProps; use
         <Modal
             {...modalProps}
             size="lg"
-            title={`Rayward report for ${username}`}
+            title={`Report for ${username}`}
             subtitle={ready ? describeVerdict(report.verdict) : undefined}
             actions={[
                 {
@@ -39,7 +39,7 @@ function ReportModal({ modalProps, userId }: { modalProps: RenderModalProps; use
                     disabled: !ready,
                     onClick: () => {
                         copyToClipboard(summarise(report, username, userId));
-                        showToast({ text: "Summary copied", variant: "success" });
+                        showToast({ text: "Copied", variant: "success" });
                     },
                 },
                 { text: "Refresh", variant: "secondary", onClick: report.refresh, loading: report.discord.outcomes.some(o => o.state === "loading") },

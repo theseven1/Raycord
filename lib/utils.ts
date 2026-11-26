@@ -10,7 +10,7 @@ import { Logger } from "@utils/Logger";
 import { MAX_CACHE_TTL_MS, MIN_CACHE_TTL_MS } from "./constants";
 
 export const cl = classNameFactory("vc-rw-");
-export const logger = new Logger("Rayward", "#f83008");
+export const logger = new Logger("Raycord", "#f83008");
 
 export const enum Severity { Clean = 0, Low = 1, Moderate = 2, High = 3, Extreme = 4 }
 

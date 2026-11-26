@@ -9,7 +9,7 @@ import type { User } from "@vencord/discord-types";
 import { ChannelStore, MessageActions, MessageStore, RelationshipStore, UserStore } from "@webpack/common";
 
 import { confirmSend } from "../components/chat/SendGuardModal";
-import { DM_CHANNEL_TYPES, LEGACY_DISMISS_KEY, SEND_APPROVAL_MS, SEND_GUARD_TIMEOUT_MS, STORAGE_PREFIX } from "../lib/constants";
+import { DM_CHANNEL_TYPES, PREVIOUS_DISMISS_KEY, SEND_APPROVAL_MS, SEND_GUARD_TIMEOUT_MS, STORAGE_PREFIX } from "../lib/constants";
 import { logger } from "../lib/utils";
 import { settings } from "../settings";
 import { peekVerdict, resolveVerdict } from "./hooks";
@@ -30,10 +30,10 @@ export async function loadDismissed() {
     try {
         let stored = await DataStore.get<string[]>(DISMISS_KEY);
         if (!stored) {
-            stored = await DataStore.get<string[]>(LEGACY_DISMISS_KEY);
+            stored = await DataStore.get<string[]>(PREVIOUS_DISMISS_KEY);
             if (stored) {
                 await DataStore.set(DISMISS_KEY, stored);
-                await DataStore.del(LEGACY_DISMISS_KEY);
+                await DataStore.del(PREVIOUS_DISMISS_KEY);
             }
         }
         if (stored) dismissed = new Set(stored);
@@ -59,6 +59,11 @@ export async function clearDismissed() {
 
 const pending = new Map<string, Promise<boolean>>();
 const approvedUntil = new Map<string, number>();
+
+export function resetChannelApproval(channelId: string) {
+    approvedUntil.delete(channelId);
+    pending.delete(channelId);
+}
 
 async function verdictWithin(userId: string): Promise<Verdict | null> {
     const cached = peekVerdict(userId);

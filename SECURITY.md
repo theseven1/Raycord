@@ -19,7 +19,7 @@ Include what you found, how to reproduce it, and what an attacker could do with 
 
 In scope:
 
-- Handling of the Rayward API key and the EASI secret, which are stored in Vencord's settings and sent only as request headers to their own hosts.
+- Handling of the Rayward API key and the optional integration secret, which are stored in Vencord's private settings and sent only as request headers to their own hosts.
 - The desktop network helper in `native.ts`, which only fetches from an allowlist of hosts.
 - Rendering of data from Rayward, the sources and Roblox, for example markup or links that could run script or mislead.
 - The first message confirmation, if it can be skipped without the user choosing to.

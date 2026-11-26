@@ -8,7 +8,7 @@ body:
       value: |
         Thanks for taking the time to report this. If a source's result for someone looks wrong, use the "A source result looks wrong" form instead.
 
-        Never paste your Rayward API key or EASI secret. Check screenshots and logs for them before posting.
+        Never paste your Rayward API key. Check screenshots and logs for it before posting.
 
   - type: textarea
     id: what-happened
@@ -74,5 +74,5 @@ body:
           required: true
         - label: I'm on the latest release, or I built from the latest main.
           required: true
-        - label: My API key and EASI secret don't appear anywhere in this report.
+        - label: My API key doesn't appear anywhere in this report.
           required: true

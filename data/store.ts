@@ -18,6 +18,17 @@ const MAX_CONCURRENT = 4;
 
 export type Settled<V> = { ok: true; value: V | null; } | { ok: false; error: unknown; };
 
+export type Intercepted = Settled<unknown> | "pending" | undefined;
+type Interceptor = (store: string, key: string) => Intercepted;
+
+let interceptor: Interceptor | undefined;
+
+export function setInterceptor(fn: Interceptor | undefined) {
+    interceptor = fn;
+}
+
+export const intercept = (store: string, key: string): Intercepted => interceptor?.(store, key);
+
 interface CacheEntry<V> {
     value: V | null;
     ts: number;
@@ -43,6 +54,7 @@ export interface SourceStore<V> {
     peek(key: string): V | null | undefined;
     prefetch(key: string): Promise<V | null>;
     refresh(key: string): Promise<V | null>;
+    evict(key: string): void;
     load(): Promise<void>;
     clear(): Promise<void>;
     subscribe(key: string, cb: () => void): () => void;
@@ -62,6 +74,7 @@ export function createSourceStore<V>(opts: SourceStoreOptions<V>): SourceStore<V
     const subscribers = new Map<string, Set<() => void>>();
 
     const isFresh = (entry: CacheEntry<V>) => Date.now() - entry.ts < opts.ttlMs();
+    const isIntercepted = (key: string) => intercept(opts.name, key) !== undefined;
 
     const pendingNotify = new Set<string>();
     function notify(key: string) {
@@ -92,7 +105,8 @@ export function createSourceStore<V>(opts: SourceStoreOptions<V>): SourceStore<V
 
     async function persistNow() {
         for (const [key, entry] of cache) if (!isFresh(entry)) cache.delete(key);
-        if (cache.size) await DataStore.set(dataStoreKey, [...cache.entries()]);
+        const entries = [...cache.entries()].filter(([key]) => !isIntercepted(key));
+        if (entries.length) await DataStore.set(dataStoreKey, entries);
         else await DataStore.del(dataStoreKey);
     }
 
@@ -152,7 +166,7 @@ export function createSourceStore<V>(opts: SourceStoreOptions<V>): SourceStore<V
             const attempts = (failures.get(key)?.attempts ?? 0) + 1;
             const backoff = FAILURE_BACKOFF_MS[Math.min(attempts, FAILURE_BACKOFF_MS.length) - 1];
             failures.set(key, { error, attempts, retryAt: Date.now() + backoff });
-            logger.warn(`[${opts.name}] ${key} failed (${error.kind}): ${error.message}`);
+            if (!isIntercepted(key)) logger.warn(`[${opts.name}] ${key} failed (${error.kind}): ${error.message}`);
         }
 
         inFlight.delete(key);
@@ -207,11 +221,19 @@ export function createSourceStore<V>(opts: SourceStoreOptions<V>): SourceStore<V
         const existing = inFlight.get(key);
         if (existing) return existing;
 
+        const mocked = intercept(opts.name, key);
+        if (mocked === "pending") {
+            inFlight.set(key, new Promise<V | null>(resolve => resolvers.set(key, resolve)));
+            notify(key);
+            return Promise.resolve(null);
+        }
+
         const promise = new Promise<V | null>(resolve => resolvers.set(key, resolve));
         inFlight.set(key, promise);
         notify(key);
 
-        if (opts.fetchMany) queueBatched(key);
+        if (mocked) queueMicrotask(() => settle(key, mocked as Settled<V>));
+        else if (opts.fetchMany) queueBatched(key);
         else runSerial(key);
         return promise;
     }
@@ -247,6 +269,16 @@ export function createSourceStore<V>(opts: SourceStoreOptions<V>): SourceStore<V
             cache.delete(key);
             failures.delete(key);
             return fetchKey(key);
+        },
+
+        evict(key) {
+            const resolve = resolvers.get(key);
+            resolvers.delete(key);
+            inFlight.delete(key);
+            cache.delete(key);
+            failures.delete(key);
+            resolve?.(null);
+            notify(key);
         },
 
         load,

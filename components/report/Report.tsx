@@ -21,7 +21,7 @@ function SourcesPanel({ report }: { report: RaywardReport; }) {
     const rest = outcomes.filter(o => !flagged.includes(o));
     const flags = easiFlags(report.notes, new Map([...report.connections, ...report.alts].map(c => [c.robloxUserId, c.robloxUsername])));
 
-    if (!outcomes.length) return <div className={cl("empty", "enter")}>No sources are turned on. Pick sources in the plugin settings.</div>;
+    if (!outcomes.length) return <div className={cl("empty", "enter")}>No sources available.</div>;
 
     return (
         <div className={cl("list")}>
@@ -48,7 +48,7 @@ export function ReportBody({ report, initialTab = "overview", scroll }: { report
 
     return (
         <div className={cl("report", "enter")}>
-            <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+            <Tabs<TabId> tabs={tabs} active={tab} onSelect={setTab} />
             <div key={tab} className={cl("tabpanel", scroll && "scroll")} role="tabpanel">
                 {tab === "overview" && <Overview report={report} onOpenTab={setTab} />}
                 {tab === "sources" && <SourcesPanel report={report} />}

@@ -15,12 +15,14 @@
 
 ## What it does
 
-Rayward collects results from several Roblox and Discord safety sources: Rotector, TASE, RAB, Okappiki, ServerSweep, RCR and etc. This plugin looks people up there and shows the answer where you're already looking.
+Rayward collects results from Roblox and Discord safety sources such as Rotector, TASE, RAB, Okappiki, ServerSweep, RCR and RoLock. Raycord checks people there and shows the answer in Discord.
 
 - A Rayward section in profiles and the DM sidebar, with an overview and report.
 - Each source's status, reasons, evidence and links.
 - Markers next to flagged users in the member list and chat, plus a warning under their message.
-- `/rayward`, `/rayward-roblox` and `/rayward-group` slash commands (Only visible to you)
+- A warning before your first message to a flagged user.
+- `/rayward`, `/rayward-roblox` and `/rayward-group` commands. Only you see the replies.
+- A test lab in the Vencord toolbox to try all of it on fake accounts.
 
 <p>
   <img src="https://skillicons.dev/icons?i=ts,react,css,nodejs,pnpm,githubactions,discord" alt="TypeScript, React, CSS, Node.js, pnpm, GitHub Actions, Discord">
@@ -43,7 +45,7 @@ pnpm inject
 
 You can also download `rayward-vX.Y.Z.zip` from the [latest release](https://github.com/theseven1/Rayward-Vencord-User-Plugin/releases/latest), unzip it into `src/userplugins/` and build the same way.
 
-Once Discord restarts, open **Settings > Vencord > Plugins**, enable **Rayward** and paste your Rayward API key. You can apply for one at [rayward.app](https://rayward.app/signin).
+Once Discord restarts, open **Settings > Vencord > Plugins**, enable **Raycord** and paste your Rayward API key. You can apply for one at [rayward.app](https://rayward.app/signin).
 
 [docs/installation.md](docs/installation.md) covers updating, uninstalling and common problems.
 

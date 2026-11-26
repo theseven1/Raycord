@@ -5,15 +5,19 @@
 ```
 index.tsx           plugin definition: patches, events, commands, menus, toolbox
 native.ts           desktop network helper with a host allowlist
-settings.tsx        settings and the CatchThem migration
+settings.tsx        settings and the Rayward → Raycord migration
 styles.css          all styles, scoped under vc-rw-
 lib/                constants, formatting, transport, markdown summary, command embeds
 data/               lookups, caching, verdicts, the send guard
+  mock.ts           test lab registry and interceptors
+  mockPresets.ts    test lab presets
+lib/testSession.ts  test lab DMs and profiles, client-side only
 components/
   brand/            logos, status icons, small icons
   report/           profile section, report modal and its tabs
   chat/             member list and chat markers, chat warning, send confirmation
-  settings/         source switches
+  settings/         source switches and the optional integration modal
+  testlab/          test lab editors and controls
   shared.tsx        tabs, tooltips, chips and states used everywhere
 assets/             bundled images, inlined at build time
 tests/              data layer tests, run with node:test
@@ -48,9 +52,15 @@ The source list (`data/providers.ts`) is cached for an hour. If refreshing it fa
 
 ## From results to a verdict
 
-`data/verdict.ts` turns each source's result into a tone (safe, under review, provisional, mixed or flagged) and, for results the source marks actionable, a severity. A report's verdict combines the Discord account, every linked Roblox account and EASI. It also keeps a list of findings for tooltips and a list of sources that failed.
+`data/verdict.ts` turns each source's result into a tone (safe, under review, provisional, mixed or flagged) and, for results the source marks actionable, a severity. A report's verdict combines the Discord account, every linked Roblox account and any optional integrations. It also keeps a list of findings for tooltips and a list of sources that failed.
 
 `data/hooks.ts` builds a report synchronously from whatever is cached and lists the keys still worth fetching. The React hook (`useRayward`) and the async resolver used by commands and the send guard both run on that one function, so the UI and the guard can't disagree. The resolver follows linked Roblox accounts as Rotector's answer arrives.
+
+## Test lab
+
+`data/mock.ts` holds the test lab's fake accounts and registers an interceptor with `data/store.ts`. Any store key for a fake Discord or Roblox ID is answered from that registry, so it never reaches the network. Presets in `data/mockPresets.ts` follow the flag types each source allows per endpoint, as listed in Rayward's API spec.
+
+`lib/testSession.ts` makes the fake accounts look real in Discord: it dispatches the user, profile and DM channel as Flux events, answers Discord's own API calls for those IDs locally (profile and messages, 404 for anything else), and keeps your messages in a fake DM on the client.
 
 ## Send guard
 

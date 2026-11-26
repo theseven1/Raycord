@@ -26,7 +26,6 @@ body:
         - ServerSweep
         - RCR
         - RoLock
-        - EASI
         - Other
     validations:
       required: true

@@ -33,7 +33,7 @@ interface RawEmbed {
 }
 
 const LIMITS = { title: 256, description: 4096, fieldName: 256, fieldValue: 1024, fields: 25 };
-const OVERFLOW = "Open the full report for the rest.";
+const OVERFLOW = "More in the full report.";
 
 const COLOR = {
     clean: 0x3fb950,
@@ -168,9 +168,9 @@ export function lookupEmbed(kind: "user" | "group", id: string, lookup: SubjectL
 }
 
 const NOTICE_COPY: Partial<Record<RaywardError["kind"], string>> = {
-    config: "Add your Rayward API key in Settings > Plugins > Rayward.",
-    auth: "Your Rayward API key was rejected. Check that it's current and your access is approved.",
-    quota: "You've reached today's lookup quota. Rayward resets it daily.",
+    config: "Add your Rayward API key in Settings > Plugins > Raycord.",
+    auth: "Your Rayward API key was rejected. Make sure it's valid and active.",
+    quota: "You've reached today's lookup quota.",
 };
 
 export function noticeEmbed(title: string, error?: RaywardError | string): RawEmbed {

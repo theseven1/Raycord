@@ -7,6 +7,7 @@
 import { settings } from "../settings";
 import { easiStore, isEasiEnabled } from "./easi";
 import { isBlockingError, makeError, type RaywardError } from "./errors";
+import { isMockDiscord } from "./mock";
 import { getProviders, invalidateProviders, loadProviders, peekProviders, providersError, subscribeProviders } from "./providers";
 import { discordAltsStore, discordStore, hasApiKey, membershipStore, outcomesFor, robloxStore, sourceKey, sourcesFor } from "./rayward";
 import { robloxAvatarStore, robloxProfileStore } from "./roblox";
@@ -53,7 +54,7 @@ const idleData = (state: ReportState, blocking?: RaywardError): RaywardData => (
 const uniqueConnections = (list: RaywardConnection[]) => [...new Map(list.map(c => [c.robloxUserId, c])).values()];
 
 function collect(userId: string, deep: boolean): { data: RaywardData; subscriptions: Subscription[]; } {
-    if (!hasApiKey()) return { data: idleData("unavailable", makeError("config", "Add a Rayward API key in the plugin settings")), subscriptions: [] };
+    if (!hasApiKey() && !isMockDiscord(userId)) return { data: idleData("unavailable", makeError("config", "Add a Rayward API key in the plugin settings")), subscriptions: [] };
 
     const discordSources = sourcesFor("discord");
     const robloxSources = sourcesFor("roblox");
@@ -132,7 +133,7 @@ const watchProviders = (cb: () => void) => {
 };
 
 export function useRayward(userId: string | undefined, { deep = false, enabled = true } = {}): RaywardReport {
-    settings.use(["sourceOverrides", "raywardApiKey", "enableEasiNotes", "easiSecret"]);
+    settings.use(["sourceOverrides", "raywardApiKey", "easiEnabled", "easiSecret"]);
 
     const active = enabled && !!userId;
     const { data, subscriptions } = active ? collect(userId, deep) : { data: idleData("idle"), subscriptions: [] };
@@ -153,7 +154,7 @@ export function useRayward(userId: string | undefined, { deep = false, enabled =
 }
 
 export async function resolveData(userId: string, deep = false): Promise<RaywardData> {
-    if (hasApiKey()) await getProviders().catch(() => { });
+    if (hasApiKey() || isMockDiscord(userId)) await getProviders().catch(() => { });
 
     let signature = "";
     for (let round = 0; round < 4; round++) {
