@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/theseven1/Raycord/compare/v1.1.0...v1.2.0) (2026-11-26)
+
+
+### Features
+
+* add Rayward sign-in, Friends page support, a profile tab and installers ([#6](https://github.com/theseven1/Raycord/issues/6)) ([b8199d9](https://github.com/theseven1/Raycord/commit/b8199d932443412a15259654d6673aee66e44d8e))
+
 ## [1.1.0](https://github.com/theseven1/Raycord/compare/v1.0.0...v1.1.0) (2026-11-26)
 
 
