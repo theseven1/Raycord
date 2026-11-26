@@ -6,6 +6,7 @@
 
 import * as DataStore from "@api/DataStore";
 import type { User } from "@vencord/discord-types";
+import { findByPropsLazy } from "@webpack";
 import { ChannelStore, MessageActions, MessageStore, RelationshipStore, UserStore } from "@webpack/common";
 
 import { confirmSend } from "../components/chat/SendGuardModal";
@@ -137,3 +138,73 @@ export function restoreDirectSends() {
     originals.clear();
 }
 
+
+const RELATIONSHIP_BLOCKED = 2;
+export const RelationshipActions = findByPropsLazy("addRelationship", "removeRelationship") as Record<string, unknown>;
+
+const pendingFriend = new Map<string, Promise<boolean>>();
+
+async function checkFriend(userId: string): Promise<boolean> {
+    const user = UserStore.getUser(userId);
+    if (!user || shouldSkipUser(user) || dismissed.has(user.id)) return true;
+
+    try {
+        const verdict = await verdictWithin(user.id);
+        if (!verdict || verdict.severity < settings.store.sendGuardThreshold) return true;
+
+        const { send, dontAskAgain } = await confirmSend(user, verdict, "friend");
+        if (send && dontAskAgain) void dismiss(user.id);
+        return send;
+    } catch (e) {
+        logger.error("Friend guard failed, allowing the request", e);
+        return true;
+    }
+}
+
+export function guardFriend(userId: string | undefined): Promise<boolean> {
+    if (!userId || !settings.store.friendGuard) return Promise.resolve(true);
+
+    const existing = pendingFriend.get(userId);
+    if (existing) return existing;
+
+    const promise = checkFriend(userId).finally(() => pendingFriend.delete(userId));
+    pendingFriend.set(userId, promise);
+    return promise;
+}
+
+export function userFromTag(discordTag: unknown): User | undefined {
+    if (typeof discordTag !== "string") return;
+    const [username, discriminator] = discordTag.split("#");
+    return (UserStore as unknown as { findByTag(u: string, d?: string): User | undefined; }).findByTag(username, discriminator);
+}
+
+const relationshipOriginals = new Map<string, (...args: any[]) => unknown>();
+
+export function interceptRelationships() {
+    const actions = RelationshipActions;
+    const wrappers: Record<string, (original: (...args: any[]) => unknown) => (...args: any[]) => unknown> = {
+        addRelationship: original => async function (this: unknown, options: { userId?: string; type?: number; } | undefined, ...rest: unknown[]) {
+            if (options?.type !== RELATIONSHIP_BLOCKED && !await guardFriend(options?.userId)) return;
+            return original.call(this, options, ...rest);
+        },
+        sendRequest: original => async function (this: unknown, options: { discordTag?: string; } | undefined, ...rest: unknown[]) {
+            if (!await guardFriend(userFromTag(options?.discordTag)?.id)) return;
+            return original.call(this, options, ...rest);
+        },
+    };
+
+    for (const [name, wrap] of Object.entries(wrappers)) {
+        const original = actions?.[name];
+        if (typeof original !== "function" || relationshipOriginals.has(name)) {
+            if (typeof original !== "function") logger.warn(`RelationshipActions.${name} not found, friend requests are unguarded`);
+            continue;
+        }
+        relationshipOriginals.set(name, original as (...args: any[]) => unknown);
+        actions[name] = wrap(original as (...args: any[]) => unknown);
+    }
+}
+
+export function restoreRelationships() {
+    for (const [name, original] of relationshipOriginals) RelationshipActions[name] = original;
+    relationshipOriginals.clear();
+}

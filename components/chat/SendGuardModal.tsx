@@ -16,21 +16,40 @@ import { flaggedBy } from "../shared";
 
 interface Answer { send: boolean; dontAskAgain: boolean; }
 
-function SendGuardModal({ modalProps, user, verdict, resolve }: {
+export type GuardKind = "message" | "friend";
+
+const COPY: Record<GuardKind, { title(name: string): string; confirm: string; cancel: string; footnote: string; }> = {
+    message: {
+        title: name => `Before you message ${name}`,
+        confirm: "Send anyway",
+        cancel: "Don't send",
+        footnote: "A flag isn't proof. You only see this before your first message.",
+    },
+    friend: {
+        title: name => `Before you add ${name} as a friend`,
+        confirm: "Add anyway",
+        cancel: "Don't add",
+        footnote: "A flag isn't proof.",
+    },
+};
+
+function SendGuardModal({ modalProps, user, verdict, kind, resolve }: {
     modalProps: RenderModalProps;
     user: User;
     verdict: Verdict;
+    kind: GuardKind;
     resolve(answer: Answer): void;
 }) {
     const [dontAsk, setDontAsk] = useState(false);
+    const copy = COPY[kind];
 
     return (
         <ConfirmModal
             {...modalProps}
-            title={`Before you message ${user.username}`}
+            title={copy.title(user.username)}
             subtitle={`${flaggedBy(verdict)} flagged this account.`}
-            confirmText="Send anyway"
-            cancelText="Don't send"
+            confirmText={copy.confirm}
+            cancelText={copy.cancel}
             variant="critical-primary"
             onConfirm={() => resolve({ send: true, dontAskAgain: dontAsk })}
             onCloseCallback={() => setImmediate(() => resolve({ send: false, dontAskAgain: false }))}
@@ -54,14 +73,14 @@ function SendGuardModal({ modalProps, user, verdict, resolve }: {
                     ))}
                 </ul>
                 <p className={cl("muted", "guard-footnote")}>
-                    A flag isn't proof. You only see this before your first message.
+                    {copy.footnote}
                 </p>
             </div>
         </ConfirmModal>
     );
 }
 
-export function confirmSend(user: User, verdict: Verdict): Promise<Answer> {
+export function confirmSend(user: User, verdict: Verdict, kind: GuardKind = "message"): Promise<Answer> {
     return new Promise(resolve => {
         let settled = false;
         const once = (answer: Answer) => {
@@ -69,6 +88,6 @@ export function confirmSend(user: User, verdict: Verdict): Promise<Answer> {
             settled = true;
             resolve(answer);
         };
-        openModal(props => <SendGuardModal modalProps={props} user={user} verdict={verdict} resolve={once} />);
+        openModal(props => <SendGuardModal modalProps={props} user={user} verdict={verdict} kind={kind} resolve={once} />);
     });
 }

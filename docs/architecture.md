@@ -9,6 +9,7 @@ settings.tsx        settings and the Rayward → Raycord migration
 styles.css          all styles, scoped under vc-rw-
 lib/                constants, formatting, transport, markdown summary, command embeds
 data/               lookups, caching, verdicts, the send guard
+  auth.ts           API key checks, sign-in and the daily recheck
   mock.ts           test lab registry and interceptors
   mockPresets.ts    test lab presets
 lib/testSession.ts  test lab DMs and profiles, client-side only

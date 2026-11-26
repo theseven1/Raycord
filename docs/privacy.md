@@ -8,6 +8,7 @@ The plugin runs in your Discord client and has no server of its own. These are t
 |---|---|---|
 | `roscoe.rayward.app` | Discord user IDs and linked Roblox IDs, with your API key | When someone is checked (see below) |
 | `roscoe.rayward.app` | Nothing identifying | Loading the source list and logos |
+| `roscoe.rayward.app` | Your API key, and your own Discord ID for one test lookup | Signing in, and a quiet recheck once a day |
 | `users.roblox.com`, `thumbnails.roblox.com`, `tr.rbxcdn.com` | Roblox IDs | Reports and `/rayward-roblox`, when "Roblox accounts" is on |
 | `rayward.app` | Nothing identifying | The icon in command replies |
 
@@ -21,6 +22,8 @@ The test lab runs entirely in your client and sends nothing. Requests that menti
 - You open a DM with them, so the send warning doesn't have to wait.
 - They DM you, if DM notifications are on.
 - They scroll into view in the member list or chat, if markers are on. Both are off by default.
+- They scroll into view on the Friends page, if Friends page markers are on.
+- You add, request or accept them as a friend, if the friend warning is on.
 - You run `/rayward` or open their report.
 
 Background checks skip bots when "Skip bots" is on, and never include you. You're only checked when you open your own profile or run `/rayward` on yourself.

@@ -2,11 +2,23 @@
 
 Settings are under **Settings > Vencord > Plugins > Raycord**. Changes apply right away unless noted.
 
+## Signing in
+
+Raycord needs a Rayward API key. When there's no key, the sign-in window opens once on its own; after that, use **Sign in** in settings, in the profile section or in the Vencord toolbox. Raycord checks the key before saving it:
+
+1. It has to look like an API key (`rwd_...`). Extension sign-in tokens are refused.
+2. Rayward's account endpoint must not accept it, since only extension sessions pass there.
+3. A test lookup of your own Discord account has to succeed.
+
+Your key is rechecked quietly once a day. If Rayward rejects it, the profile section asks you to sign in again.
+
+On the Add Friend page Discord only knows a username, so the friend warning only appears when Discord already knows who that is.
+
 ## Lookups
 
 | Setting | Default | What it does |
 |---|---|---|
-| API key | empty | Your key from rayward.app. Nothing is checked without it. Changing it clears the cache. |
+| Rayward account | not signed in | Sign in with your API key from rayward.app. Nothing is checked until you do. Settings only show the key masked. Signing in or out clears the cache. |
 | Sources | Rayward's defaults | One switch per source. New sources follow Rayward's default until you change them. |
 | Roblox accounts | on | Shows names and avatars of linked Roblox accounts in reports. |
 
@@ -14,7 +26,7 @@ Settings are under **Settings > Vencord > Plugins > Raycord**. Changes apply rig
 
 | Setting | Default | What it does |
 |---|---|---|
-| Profile section | on | The Rayward section in profiles and DM sidebars. Needs a restart. |
+| Profile section | on | The Rayward section in profiles and DM sidebars, and the Rayward tab in full profiles. Needs a restart. |
 | Start expanded | on | Opens the profile section expanded. |
 | Default tab | Overview | Overview, Sources or Roblox. |
 
@@ -23,6 +35,7 @@ Settings are under **Settings > Vencord > Plugins > Raycord**. Changes apply rig
 | Setting | Default | What it does |
 |---|---|---|
 | Member list markers | off | Marks flagged users in the member list. Checks everyone who scrolls into view. |
+| Friends page markers | on | Marks flagged users on the Friends page, including pending requests. Follows Skip friends. |
 | Chat markers | off | Marks flagged message authors. |
 | Marker style | Icon | Icon, Dot or Pill. |
 | Marker level | Moderate | Lowest level that shows a marker. |
@@ -34,6 +47,7 @@ Both check every user you can see, which adds up in big servers. Results are cac
 | Setting | Default | What it does |
 |---|---|---|
 | Send warning | on | Asks before your first message, sticker or wave to a flagged user in a DM. |
+| Friend warning | on | Asks before you add, request or accept a flagged user as a friend. Declining and blocking aren't checked. |
 | Send warning level | Moderate | Lowest level that triggers it. |
 | Chat warnings | off | A banner under a flagged user's first message, once per channel. |
 | DM notifications | off | Notifies you when a flagged user DMs you, once per session. |
@@ -65,7 +79,7 @@ Reports show every result, but only results a source marks as actionable count t
 | `/rayward-roblox <id>` | Results for a Roblox user ID. |
 | `/rayward-group <id>` | Results for a Roblox group ID. |
 | Right-click a user > Rayward report | Opens the full report. |
-| Vencord toolbox | Check yourself, Clear cache, Reset send warnings, Test lab. |
+| Vencord toolbox | Sign in, Check yourself, Clear cache, Reset send warnings, Test lab. |
 
 ## Test lab
 

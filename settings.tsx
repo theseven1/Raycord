@@ -9,6 +9,7 @@ import { Button } from "@components/Button";
 import { OptionType } from "@utils/types";
 import { showToast } from "@webpack/common";
 
+import { AccountSetting } from "./components/settings/AccountSetting";
 import { SourceToggles } from "./components/settings/SourceToggles";
 import { cl, Severity } from "./lib/utils";
 
@@ -26,13 +27,9 @@ const thresholdOptions = (defaultValue: Severity) => [
 ].map(o => ({ ...o, default: o.value === defaultValue }));
 
 export const settings = definePluginSettings({
-    raywardApiKey: {
-        type: OptionType.STRING,
-        displayName: "API key",
-        description: "Your Rayward API key",
-        default: "",
-        placeholder: "rwd_...",
-        onChange: () => void clearCaches(),
+    account: {
+        type: OptionType.COMPONENT,
+        component: AccountSetting,
     },
     sources: {
         type: OptionType.COMPONENT,
@@ -79,6 +76,12 @@ export const settings = definePluginSettings({
         description: "Mark flagged users in chat",
         default: false,
     },
+    friendsPageMarkers: {
+        type: OptionType.BOOLEAN,
+        displayName: "Friends page markers",
+        description: "Mark flagged users on the Friends page",
+        default: true,
+    },
     indicatorStyle: {
         type: OptionType.SELECT,
         displayName: "Marker style",
@@ -100,6 +103,12 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         displayName: "Send warning",
         description: "Warn you before messaging a flagged user",
+        default: true,
+    },
+    friendGuard: {
+        type: OptionType.BOOLEAN,
+        displayName: "Friend warning",
+        description: "Warn you before adding a flagged user as a friend",
         default: true,
     },
     sendGuardThreshold: {
@@ -150,10 +159,18 @@ export const settings = definePluginSettings({
         ),
     },
 }, {
-    indicatorStyle: { disabled() { return !this.store.showMemberListIndicator && !this.store.showMessageIndicator; } },
-    indicatorThreshold: { disabled() { return !this.store.showMemberListIndicator && !this.store.showMessageIndicator; } },
-    sendGuardThreshold: { disabled() { return !this.store.sendGuard; } },
+    indicatorStyle: { disabled() { return !this.store.showMemberListIndicator && !this.store.showMessageIndicator && !this.store.friendsPageMarkers; } },
+    indicatorThreshold: { disabled() { return !this.store.showMemberListIndicator && !this.store.showMessageIndicator && !this.store.friendsPageMarkers; } },
+    sendGuardThreshold: { disabled() { return !this.store.sendGuard && !this.store.friendGuard; } },
     warnThreshold: { disabled() { return !this.store.warnInChat && !this.store.notifyOnFlaggedDm; } },
     defaultTab: { disabled() { return !this.store.showInProfile; } },
     defaultExpanded: { disabled() { return !this.store.showInProfile; } },
-}).withPrivateSettings<{ sectionExpanded?: boolean; easiEnabled?: boolean; easiSecret?: string; }>();
+}).withPrivateSettings<{
+    raywardApiKey?: string;
+    keyStatus?: "ok" | "invalid" | "unchecked";
+    keyCheckedAt?: number;
+    signInPrompted?: boolean;
+    sectionExpanded?: boolean;
+    easiEnabled?: boolean;
+    easiSecret?: string;
+}>();

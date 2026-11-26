@@ -55,10 +55,14 @@ export interface MockAccount {
     bio: string;
     accentColor: number | null;
     bot: boolean;
+    relationship: MockRelationship;
     sources: Record<string, MockSource>;
     roblox: MockRobloxAccount[];
     otherDiscord: MockOtherAccount[];
 }
+
+export type MockRelationship = "none" | "incoming" | "outgoing" | "friend";
+export const RELATIONSHIPS: MockRelationship[] = ["none", "incoming", "outgoing", "friend"];
 
 export interface MockMessage { id: string; authorId: string; content: string; timestamp: number; stickerIds?: string[]; }
 
@@ -319,6 +323,7 @@ export function newAccount(index: number): MockAccount {
         bio: "Test account",
         accentColor: null,
         bot: false,
+        relationship: "none",
         sources: {},
         roblox: [],
         otherDiscord: [],
@@ -418,6 +423,7 @@ function account(v: unknown, path: string): MockAccount {
         bio: str(v.bio, `${path}.bio`, ""),
         accentColor: typeof accent === "number" && accent >= 0 && accent <= 0xffffff ? accent : null,
         bot: !!v.bot,
+        relationship: RELATIONSHIPS.includes(v.relationship) ? v.relationship : "none",
         sources: sources(v.sources, `${path}.sources`),
         roblox: Array.isArray(v.roblox) ? v.roblox.map((r: unknown, i: number) => robloxAccount(r, `${path}.roblox[${i}]`)) : [],
         otherDiscord: Array.isArray(v.otherDiscord)

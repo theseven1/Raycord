@@ -168,7 +168,7 @@ export function lookupEmbed(kind: "user" | "group", id: string, lookup: SubjectL
 }
 
 const NOTICE_COPY: Partial<Record<RaywardError["kind"], string>> = {
-    config: "Add your Rayward API key in Settings > Plugins > Raycord.",
+    config: "Sign in with your Rayward API key: Rayward: Sign in in the Vencord toolbox, or Settings > Plugins > Raycord.",
     auth: "Your Rayward API key was rejected. Make sure it's valid and active.",
     quota: "You've reached today's lookup quota.",
 };

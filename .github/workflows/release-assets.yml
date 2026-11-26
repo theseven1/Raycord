@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p dist/rayward
           rsync -a \
-            --exclude .git --exclude .github --exclude docs --exclude tests \
+            --exclude .git --exclude .github --exclude docs --exclude tests --exclude installer \
             --exclude '*.md' --exclude '.*' \
             --exclude release-please-config.json \
             source/ dist/rayward/
@@ -50,14 +50,19 @@ jobs:
           cd dist
           zip -qr "rayward-${TAG}.zip" rayward
           sha256sum "rayward-${TAG}.zip" > "rayward-${TAG}.zip.sha256"
-          cat "rayward-${TAG}.zip.sha256"
+          cp ../source/installer/install.sh ../source/installer/install.ps1 .
+          sha256sum "rayward-${TAG}.zip" install.sh install.ps1 > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/rayward-${{ env.TAG }}.zip
+          subject-path: |
+            dist/rayward-${{ env.TAG }}.zip
+            dist/install.sh
+            dist/install.ps1
 
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" dist/rayward-"$TAG".zip dist/rayward-"$TAG".zip.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" dist/rayward-"$TAG".zip dist/rayward-"$TAG".zip.sha256 dist/install.sh dist/install.ps1 dist/SHA256SUMS --clobber --repo "$GITHUB_REPOSITORY"

@@ -6,3 +6,4 @@
 
 export const useState = initial => [initial, () => { }];
 export const useEffect = () => { };
+export const UserStore = { getCurrentUser: () => ({ id: "999" }) };

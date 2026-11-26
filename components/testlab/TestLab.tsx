@@ -12,7 +12,8 @@ import type { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, showToast, TextArea, TextInput, useState } from "@webpack/common";
 
 import { isEasiEnabled } from "../../data/easi";
-import { labState, type MockAccount, type MockRobloxAccount, mockSnowflake, newRobloxAccount, normalizeState, nowSeconds, setLab, type TestLabState, updateAccount, updateLab, useLab } from "../../data/mock";
+import { userFromTag } from "../../data/guard";
+import { labState, type MockAccount, type MockRelationship, type MockRobloxAccount, mockSnowflake, newRobloxAccount, normalizeState, nowSeconds, setLab, type TestLabState, updateAccount, updateLab, useLab } from "../../data/mock";
 import { type PresetId, PRESETS, supportsSubject } from "../../data/mockPresets";
 import { useProviders } from "../../data/providers";
 import type { RaywardProvider } from "../../data/types";
@@ -33,6 +34,12 @@ export function openTestLab() {
 
 const presetOptions = PRESETS.map(p => ({ label: p.label, value: p.id as PresetId }));
 const isDefaultAvatar = (avatar: string) => /^[0-5]$/.test(avatar);
+
+function usernameProblem(name: string, accountId: string) {
+    if (!/^[a-z0-9_.]{2,32}$/.test(name)) return "2 to 32 lowercase letters, numbers, _ or .";
+    const real = userFromTag(name);
+    if (real && real.id !== accountId) return "A real Discord user has this username. Pick another.";
+}
 const recordCount = (sources: MockAccount["sources"]) => Object.values(sources).filter(s => s.state !== "none").length;
 
 function TestLabModal({ modalProps }: { modalProps: RenderModalProps; }) {
@@ -150,7 +157,7 @@ function ProfilePanel({ account }: { account: MockAccount; }) {
             <Group title="Profile">
                 <div className={cl("lab-grid")}>
                     <Field label="Username">
-                        <TextField value={account.username} validate={v => /^[a-z0-9_.]{2,32}$/.test(v) ? undefined : "2 to 32 lowercase letters, numbers, _ or ."} onCommit={v => change(a => { a.username = v; })} />
+                        <TextField value={account.username} validate={v => usernameProblem(v, account.id)} onCommit={v => change(a => { a.username = v; })} />
                     </Field>
                     <Field label="Display name">
                         <TextField value={account.globalName} onCommit={v => change(a => { a.globalName = v.trim(); })} />
@@ -177,6 +184,18 @@ function ProfilePanel({ account }: { account: MockAccount; }) {
                     )}
                     <Field label="Bio" wide>
                         <TextField multiline value={account.bio} onCommit={v => change(a => { a.bio = v; })} />
+                    </Field>
+                    <Field label="Friend status">
+                        <Choice<MockRelationship>
+                            options={[
+                                { label: "Not friends", value: "none" },
+                                { label: "Sent you a request", value: "incoming" },
+                                { label: "You sent a request", value: "outgoing" },
+                                { label: "Friends", value: "friend" },
+                            ]}
+                            value={account.relationship}
+                            onChange={v => change(a => { a.relationship = v; })}
+                        />
                     </Field>
                     <div className={cl("lab-toggles")}>
                         <Toggle label="Bot" checked={account.bot} onChange={v => change(a => { a.bot = v; })} />

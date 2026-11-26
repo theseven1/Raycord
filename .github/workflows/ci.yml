@@ -58,7 +58,15 @@ jobs:
       - name: Add plugin to Vencord
         run: |
           mkdir -p vencord/src/userplugins/rayward
-          rsync -a --exclude .git --exclude .github --exclude docs plugin/ vencord/src/userplugins/rayward/
+          rsync -a --exclude .git --exclude .github --exclude docs --exclude installer plugin/ vencord/src/userplugins/rayward/
+
+      - name: Check installers
+        working-directory: plugin
+        shell: bash
+        run: |
+          bash -n installer/install.sh
+          shellcheck -S warning installer/install.sh
+          pwsh -NoProfile -Command '$errors = $null; [System.Management.Automation.Language.Parser]::ParseFile("installer/install.ps1", [ref]$null, [ref]$errors) | Out-Null; if ($errors) { $errors | ForEach-Object { Write-Host $_.Message }; exit 1 }'
 
       - name: Lint
         working-directory: vencord

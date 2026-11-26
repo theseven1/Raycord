@@ -6,10 +6,10 @@
 
 import { settings } from "../settings";
 import { easiStore, isEasiEnabled } from "./easi";
-import { isBlockingError, makeError, type RaywardError } from "./errors";
+import { isBlockingError, type RaywardError } from "./errors";
 import { isMockDiscord } from "./mock";
 import { getProviders, invalidateProviders, loadProviders, peekProviders, providersError, subscribeProviders } from "./providers";
-import { discordAltsStore, discordStore, hasApiKey, membershipStore, outcomesFor, robloxStore, sourceKey, sourcesFor } from "./rayward";
+import { discordAltsStore, discordStore, hasApiKey, membershipStore, missingKeyError, outcomesFor, robloxStore, sourceKey, sourcesFor } from "./rayward";
 import { robloxAvatarStore, robloxProfileStore } from "./roblox";
 import { type Subscription, useSubscriptions } from "./store";
 import type { DiscordAlt, EasiResult, RaywardConnection, RaywardMembership, SubjectLookup, Verdict } from "./types";
@@ -54,7 +54,7 @@ const idleData = (state: ReportState, blocking?: RaywardError): RaywardData => (
 const uniqueConnections = (list: RaywardConnection[]) => [...new Map(list.map(c => [c.robloxUserId, c])).values()];
 
 function collect(userId: string, deep: boolean): { data: RaywardData; subscriptions: Subscription[]; } {
-    if (!hasApiKey() && !isMockDiscord(userId)) return { data: idleData("unavailable", makeError("config", "Add a Rayward API key in the plugin settings")), subscriptions: [] };
+    if (!hasApiKey() && !isMockDiscord(userId)) return { data: idleData("unavailable", missingKeyError()), subscriptions: [] };
 
     const discordSources = sourcesFor("discord");
     const robloxSources = sourcesFor("roblox");
@@ -133,7 +133,7 @@ const watchProviders = (cb: () => void) => {
 };
 
 export function useRayward(userId: string | undefined, { deep = false, enabled = true } = {}): RaywardReport {
-    settings.use(["sourceOverrides", "raywardApiKey", "easiEnabled", "easiSecret"]);
+    settings.use(["sourceOverrides", "raywardApiKey", "keyStatus", "easiEnabled", "easiSecret"]);
 
     const active = enabled && !!userId;
     const { data, subscriptions } = active ? collect(userId, deep) : { data: idleData("idle"), subscriptions: [] };
